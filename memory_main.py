@@ -630,27 +630,31 @@ def memory_tier(action: str = "view", tier: str = "ALL") -> dict:
 
 def memory_stats() -> dict:
     """
-    获取记忆统计【P0修复】移除敏感信息泄露
+    获取记忆统计【P0修复】统一响应格式
     """
-    from memory_tier import tier_manager
-    from memory_session import session_state
+    try:
+        from memory_tier import tier_manager
+        from memory_session import session_state
 
-    db = get_db()
-    warm_stats = db.stats()
-    cold_memories = tier_manager.get_cold_memories(limit=1000)
+        db = get_db()
+        warm_stats = db.stats()
+        cold_memories = tier_manager.get_cold_memories(limit=1000)
 
-    return {
-        "warm_store": warm_stats,
-        "cold_store": {"count": len(cold_memories)},
-        "hot_store": {
-            "has_content": bool(session_state.get_summary())
-        },
-        "config": {
-            "hot_ttl": f"{CONFIG.get('hot_ttl_hours', 24)}h",
-            "warm_ttl": f"{CONFIG.get('warm_ttl_days', 30)}d",
-            "min_importance": CONFIG.get("min_importance", 0.3),
+        data = {
+            "warm_store": warm_stats,
+            "cold_store": {"count": len(cold_memories)},
+            "hot_store": {
+                "has_content": bool(session_state.get_summary())
+            },
+            "config": {
+                "hot_ttl": f"{CONFIG.get('hot_ttl_hours', 24)}h",
+                "warm_ttl": f"{CONFIG.get('warm_ttl_days', 30)}d",
+                "min_importance": CONFIG.get("min_importance", 0.3),
+            }
         }
-    }
+        return api_response(success=True, data=data)
+    except Exception as e:
+        return api_response(success=False, error=str(e))
 
 
 def memory_kg(action: str = "stats", entity: str = None, depth: int = 2,
@@ -803,24 +807,31 @@ def memory_disambiguate(entity_name: str, entity_type: str = None,
 
 def memory_health(action: str = "report") -> dict:
     """
-    记忆健康度仪表盘【新增】
+    记忆健康度仪表盘【新增】统一响应格式
     
     Args:
         action: 操作 - report|dashboard|score
     """
-    from memory_health import get_health
-    
-    health = get_health()
-    
-    if action == "score":
-        report = health.generate_report()
-        return {"score": report["health_score"], "status": report["status"]}
-    
-    elif action == "dashboard":
-        return health.get_dashboard()
-    
-    else:  # report
-        return health.generate_report()
+    try:
+        from memory_health import get_health
+        
+        health = get_health()
+        
+        if action == "score":
+            report = health.generate_report()
+            return api_response(success=True, data={
+                "score": report["health_score"], 
+                "status": report["status"]
+            })
+        
+        elif action == "dashboard":
+            return api_response(success=True, data=health.get_dashboard())
+        
+        else:  # report
+            return api_response(success=True, data=health.generate_report())
+            
+    except Exception as e:
+        return api_response(success=False, error=str(e))
 
 
 def memory_temporal(action: str = "changes", memory_id: str = None, days: int = 30) -> dict:
