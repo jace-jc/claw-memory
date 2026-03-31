@@ -654,9 +654,8 @@ class LanceDBStore:
             weights = None
             if use_adaptive:
                 try:
-                    from adaptive_rerank import get_adaptive_rrf
-                    adaptive = get_adaptive_rrf()
-                    weights = adaptive.get_weights()
+                    from incremental_learning import get_adaptive_weights
+                    weights = get_adaptive_weights()
                 except:
                     pass
             
