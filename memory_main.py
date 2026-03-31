@@ -165,6 +165,13 @@ TOOLS = {
             "messages": {"type": "array", "required": True, "description": "消息列表"},
         }
     },
+    "memory_auto_extract": {
+        "description": "【新增】自动从对话中提取事实、偏好、决策、目标、教训（模仿Mem0）",
+        "params": {
+            "text": {"type": "string", "description": "要分析的文本"},
+            "messages": {"type": "array", "description": "消息列表（替代text）"},
+        }
+    },
 }
 
 # ==================== 核心函数 ====================
@@ -1173,6 +1180,54 @@ def memory_extract_session(messages: list) -> dict:
         "stored": stored,
         "memories": memories
     }
+
+
+def memory_auto_extract(text: str = "", messages: list = None) -> dict:
+    """
+    【新增】自动从对话中提取事实、偏好、决策、目标、教训
+    
+    模仿 Mem0 的自动提取功能，但完全本地运行
+    
+    Args:
+        text: 要分析的文本（直接传入文本）
+        messages: 消息列表（替代text，包含role和content字段）
+    
+    Returns:
+        提取的事实列表，包含类型、内容、实体、置信度
+    """
+    from auto_extract import get_auto_extractor
+    
+    extractor = get_auto_extractor()
+    
+    if messages:
+        # 从消息列表提取
+        facts = extractor.extract_from_messages(messages)
+    elif text:
+        # 从文本提取
+        facts = extractor.extract_from_text(text)
+    else:
+        return api_response(success=False, error="必须提供text或messages")
+    
+    # 转换为字典格式
+    result = [
+        {
+            "type": f.type,
+            "content": f.content,
+            "entities": f.entities,
+            "confidence": f.confidence,
+            "timestamp": f.timestamp,
+        }
+        for f in facts
+    ]
+    
+    return api_response(
+        success=True,
+        data={
+            "extracted": len(result),
+            "facts": result,
+            "stats": extractor.get_stats(),
+        }
+    )
 
 
 # ==================== 自动钩子 ====================
