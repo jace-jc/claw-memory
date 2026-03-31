@@ -121,6 +121,49 @@ def test_mrr_calculation():
     print("✅ test_mrr_calculation 通过")
 
 
+def test_user_profile():
+    """测试用户画像"""
+    from user_profile import build_user_profile, UserProfiler
+    
+    memories = [
+        {'content': '用户名字叫张三', 'type': 'fact'},
+        {'content': '用户喜欢Python和JavaScript', 'type': 'fact'},
+        {'content': '用户住在上海', 'type': 'fact'},
+    ]
+    profile = build_user_profile(memories)
+    
+    assert profile.name == None  # 简单提取暂不支持
+    assert len(profile.interests) >= 1
+    print("✅ test_user_profile 通过")
+
+
+def test_multimodal_module():
+    """测试多模态模块"""
+    from multimodal import MultimodalExtractor, ImageMemory
+    
+    extractor = MultimodalExtractor()
+    assert extractor is not None
+    
+    # 测试ImageMemory创建
+    img_mem = ImageMemory(
+        image_path="/tmp/test.jpg",
+        caption="测试图片"
+    )
+    assert img_mem.caption == "测试图片"
+    print("✅ test_multimodal_module 通过")
+
+
+def test_auto_backup_scheduler():
+    """测试自动备份调度器"""
+    from auto_backup import AutoBackupScheduler
+    
+    scheduler = AutoBackupScheduler(interval_hours=1, max_backups=5)
+    assert scheduler.interval_hours == 1
+    assert scheduler.max_backups == 5
+    assert scheduler.is_running == False
+    print("✅ test_auto_backup_scheduler 通过")
+
+
 if __name__ == "__main__":
     print("运行Claw Memory测试套件...\n")
     
@@ -134,6 +177,9 @@ if __name__ == "__main__":
         test_config,
         test_benchmark_tests_exist,
         test_mrr_calculation,
+        test_user_profile,
+        test_multimodal_module,
+        test_auto_backup_scheduler,
     ]
     
     passed = 0
