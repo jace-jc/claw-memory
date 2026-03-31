@@ -232,6 +232,243 @@ BENCHMARK_TESTS_EXTENDED = [
     },
 ]
 
+# 扩展测试集：更多场景
+BENCHMARK_TESTS_COMPREHENSIVE = [
+    # 健康/生活方式
+    {
+        "id": "health_001",
+        "query": "用户喜欢什么运动",
+        "type": "preference",
+        "relevant_keywords": ["运动", "跑步", "健身"],
+        "expected_types": ["preference"],
+        "test_memory": "用户喜欢跑步和游泳，每周锻炼3次"
+    },
+    {
+        "id": "health_002",
+        "query": "用户有什么健康问题",
+        "type": "fact",
+        "relevant_keywords": ["健康", "问题", "过敏"],
+        "expected_types": ["fact"],
+        "test_memory": "用户对花粉过敏，体检发现轻度贫血"
+    },
+    
+    # 工作相关
+    {
+        "id": "work_001",
+        "query": "用户的公司在哪里",
+        "type": "fact",
+        "relevant_keywords": ["公司", "地点", "地址"],
+        "expected_types": ["fact"],
+        "test_memory": "用户在字节跳动工作，公司总部在北京中关村"
+    },
+    {
+        "id": "work_002",
+        "query": "用户的直属领导是谁",
+        "type": "entity",
+        "relevant_keywords": ["领导", "老板", "上司"],
+        "expected_types": ["entity"],
+        "test_memory": "用户的直属领导是张经理，负责产品团队"
+    },
+    
+    # 教育背景
+    {
+        "id": "edu_001",
+        "query": "用户毕业于哪个学校",
+        "type": "fact",
+        "relevant_keywords": ["毕业", "学校", "大学", "学历"],
+        "expected_types": ["fact"],
+        "test_memory": "用户毕业于清华大学计算机系"
+    },
+    {
+        "id": "edu_002",
+        "query": "用户学什么专业",
+        "type": "fact",
+        "relevant_keywords": ["专业", "方向", "研究"],
+        "expected_types": ["fact"],
+        "test_memory": "用户的研究方向是人工智能和机器学习"
+    },
+    
+    # 家庭/社交
+    {
+        "id": "family_001",
+        "query": "用户结婚了没有",
+        "type": "fact",
+        "relevant_keywords": ["结婚", "配偶", "家庭"],
+        "expected_types": ["fact"],
+        "test_memory": "用户已婚，有两个孩子"
+    },
+    {
+        "id": "family_002",
+        "query": "用户的家人喜欢什么",
+        "type": "preference",
+        "relevant_keywords": ["家人", "喜欢", "孩子"],
+        "expected_types": ["preference"],
+        "test_memory": "用户的孩子喜欢玩乐高和拼图"
+    },
+    
+    # 财务/消费
+    {
+        "id": "finance_001",
+        "query": "用户有什么消费习惯",
+        "type": "preference",
+        "relevant_keywords": ["消费", "花钱", "购物"],
+        "expected_types": ["preference"],
+        "test_memory": "用户注重性价比，偏好折扣季购物"
+    },
+    {
+        "id": "finance_002",
+        "query": "用户用什么支付方式",
+        "type": "fact",
+        "relevant_keywords": ["支付", "支付宝", "微信"],
+        "expected_types": ["fact"],
+        "test_memory": "用户主要使用支付宝和微信支付"
+    },
+    
+    # 时间/日程
+    {
+        "id": "schedule_001",
+        "query": "用户明天有什么安排",
+        "type": "temporal",
+        "relevant_keywords": ["明天", "安排", "日程"],
+        "expected_types": ["task_state"],
+        "test_memory": "用户明天上午有团队会议，下午约了客户"
+    },
+    {
+        "id": "schedule_002",
+        "query": "用户这周末做什么",
+        "type": "temporal",
+        "relevant_keywords": ["周末", "休息", "计划"],
+        "expected_types": ["temporal"],
+        "test_memory": "用户这周末计划和朋友一起去爬山"
+    },
+    
+    # 项目/任务状态
+    {
+        "id": "project_001",
+        "query": "用户现在在做什么项目",
+        "type": "task_state",
+        "relevant_keywords": ["项目", "进行", "当前"],
+        "expected_types": ["task_state"],
+        "test_memory": "用户正在开发一个电商小程序，预计下个月上线"
+    },
+    {
+        "id": "project_002",
+        "query": "用户的项目进展如何",
+        "type": "task_state",
+        "relevant_keywords": ["进展", "进度", "完成"],
+        "expected_types": ["task_state"],
+        "test_memory": "用户的后端API项目完成了80%，正在测试阶段"
+    },
+    
+    # 技能/能力
+    {
+        "id": "skill_001",
+        "query": "用户会什么编程语言",
+        "type": "entity",
+        "relevant_keywords": ["语言", "编程", "掌握"],
+        "expected_types": ["entity"],
+        "test_memory": "用户精通Python和JavaScript，正在学习Rust"
+    },
+    {
+        "id": "skill_002",
+        "query": "用户英语水平如何",
+        "type": "fact",
+        "relevant_keywords": ["英语", "外语", "水平"],
+        "expected_types": ["fact"],
+        "test_memory": "用户英语六级，能熟练阅读英文技术文档"
+    },
+    
+    # 习惯/行为
+    {
+        "id": "habit_001",
+        "query": "用户早上几点起床",
+        "type": "fact",
+        "relevant_keywords": ["起床", "早上", "习惯"],
+        "expected_types": ["fact"],
+        "test_memory": "用户习惯早上7点起床，8点出门跑步"
+    },
+    {
+        "id": "habit_002",
+        "query": "用户晚上几点睡觉",
+        "type": "fact",
+        "relevant_keywords": ["睡觉", "晚上", "休息"],
+        "expected_types": ["fact"],
+        "test_memory": "用户通常在晚上11点前睡觉"
+    },
+    
+    # 旅行/位置偏好
+    {
+        "id": "travel_001",
+        "query": "用户去过哪些城市",
+        "type": "fact",
+        "relevant_keywords": ["去过", "城市", "旅行"],
+        "expected_types": ["fact"],
+        "test_memory": "用户去过上海、北京、深圳和成都"
+    },
+    {
+        "id": "travel_002",
+        "query": "用户喜欢去哪里旅游",
+        "type": "preference",
+        "relevant_keywords": ["旅游", "喜欢", "度假"],
+        "expected_types": ["preference"],
+        "test_memory": "用户喜欢去海边度假，最爱三亚和厦门"
+    },
+    
+    # 目标/愿望
+    {
+        "id": "goal_001",
+        "query": "用户今年的目标是什么",
+        "type": "fact",
+        "relevant_keywords": ["目标", "计划", "愿望"],
+        "expected_types": ["fact"],
+        "test_memory": "用户今年的目标是读完50本书"
+    },
+    {
+        "id": "goal_002",
+        "query": "用户想学习什么新技能",
+        "type": "preference",
+        "relevant_keywords": ["学习", "新", "技能"],
+        "expected_types": ["preference"],
+        "test_memory": "用户想学习钢琴和摄影"
+    },
+    
+    # 娱乐/爱好
+    {
+        "id": "hobby_001",
+        "query": "用户闲时做什么",
+        "type": "preference",
+        "relevant_keywords": ["闲时", "业余", "爱好"],
+        "expected_types": ["preference"],
+        "test_memory": "用户闲时喜欢看电影和读书"
+    },
+    {
+        "id": "hobby_002",
+        "query": "用户玩什么游戏",
+        "type": "preference",
+        "relevant_keywords": ["游戏", "玩", "娱乐"],
+        "expected_types": ["preference"],
+        "test_memory": "用户偶尔玩王者荣耀，喜欢策略类游戏"
+    },
+    
+    # 物品/财产
+    {
+        "id": "possess_001",
+        "query": "用户用什么电脑",
+        "type": "fact",
+        "relevant_keywords": ["电脑", "笔记本", "设备"],
+        "expected_types": ["fact"],
+        "test_memory": "用户使用MacBook Pro和Dell显示器"
+    },
+    {
+        "id": "possess_002",
+        "query": "用户有什么车",
+        "type": "fact",
+        "relevant_keywords": ["车", "汽车", "出行"],
+        "expected_types": ["fact"],
+        "test_memory": "用户开一辆特斯拉Model Y"
+    },
+]
+
 # 评估指标计算
 def calculate_recall(results: List[dict], test_case: dict) -> float:
     """计算Recall@K"""
