@@ -105,11 +105,29 @@ TOOLS = {
         }
     },
     "memory_tier": {
-        "description": "查看或管理记忆层级",
+        "description": "查看或管理记忆层级（4-Tier: HOT/WARM/COLD/ARCHIVED）",
         "params": {
-            "action": {"type": "string", "description": "操作: view|stats|auto_tier"},
-            "tier": {"type": "string", "description": "层级: HOT|WARM|COLD|ALL"},
+            "action": {"type": "string", "description": "操作: view|stats|auto_tier|rebalance"},
+            "tier": {"type": "string", "description": "层级: HOT|WARM|COLD|ARCHIVED|ALL"},
         }
+    },
+    "memory_tier_get": {
+        "description": "【P2新增】获取记忆所在层级",
+        "params": {
+            "memory_id": {"type": "string", "required": True, "description": "记忆ID"},
+        }
+    },
+    "memory_tier_move": {
+        "description": "【P2新增】移动记忆到指定层级",
+        "params": {
+            "memory_id": {"type": "string", "required": True, "description": "记忆ID"},
+            "tier": {"type": "string", "required": True, "description": "目标层级: HOT|WARM|COLD|ARCHIVED"},
+            "force": {"type": "boolean", "description": "强制移动（忽略重要性检查）"},
+        }
+    },
+    "memory_tier_stats_v2": {
+        "description": "【P2新增】获取各层级统计（新版4-Tier统计）",
+        "params": {}
     },
     "memory_stats": {
         "description": "获取记忆统计",
@@ -157,6 +175,13 @@ TOOLS = {
             "action": {"type": "string", "description": "操作: decay_curve|should_forget|analyze"},
             "memory_id": {"type": "string", "description": "记忆ID（should_forget时必填）"},
             "threshold": {"type": "number", "description": "遗忘阈值（默认0.2）"},
+        }
+    },
+    "memory_temporal_extract": {
+        "description": "【P2新增】时序信息提取 - 从文本中提取时间信息（相对/绝对）",
+        "params": {
+            "text": {"type": "string", "required": True, "description": "要分析的文本"},
+            "reference_date": {"type": "string", "description": "参考时间 ISO 格式（默认当前时间）"},
         }
     },
     "memory_extract_session": {
@@ -228,6 +253,14 @@ def memory_store(
         "updated_at": datetime.now().isoformat(),
     }
 
+    # 【P2新增】自动分配层级
+    try:
+        from memory_tier_manager import assign_tier_for_memory, TIER_WARM
+        assigned_tier = assign_tier_for_memory(memory)
+        memory["tier"] = assigned_tier
+    except Exception:
+        memory["tier"] = TIER_WARM  # 默认 WARM
+
     # 存储到 LanceDB
     db = get_db()
     success = db.store(memory)
@@ -257,7 +290,9 @@ def memory_store(
     return {
         "success": success,
         "memory_id": memory["id"],
-        "message": f"记忆存储{'成功' if success else '失败'}"
+        "message": f"记忆存储{'成功' if success else '失败'}",
+        "tier": memory.get("tier", "WARM"),  # 【P2新增】返回分配的层级
+        "importance": importance
     }
 
 
@@ -594,16 +629,45 @@ def memory_forget(memory_id: str = None, query: str = None) -> dict:
 
 def memory_tier(action: str = "view", tier: str = "ALL") -> dict:
     """
-    查看或管理层级状态
+    查看或管理层级状态（4-Tier架构）
+    
+    层级说明:
+    - HOT: 重要性 > 0.9, SESSION-STATE.md
+    - WARM: 重要性 > 0.7, LanceDB
+    - COLD: 重要性 > 0.5, MEMORY.md + Git
+    - ARCHIVED: 重要性 <= 0.5, 可遗忘
     """
     from memory_tier import tier_manager
     from memory_session import session_state
+    from memory_tier_manager import (
+        get_tier_manager, TIER_HOT, TIER_WARM, TIER_COLD, TIER_ARCHIVED,
+        get_tier, move_tier, get_tier_stats
+    )
 
     if action == "stats":
-        return tier_manager.stats()
+        # 返回新旧两种统计
+        return {
+            "legacy": tier_manager.stats(),
+            "v2": get_tier_stats()
+        }
 
     if action == "auto_tier":
-        return tier_manager.auto_tier()
+        # 使用新的 reTier 功能
+        mgr = get_tier_manager()
+        if mgr.should_reTier():
+            return mgr.reTier_all()
+        else:
+            return {"success": True, "message": "reTier未到期，跳过", "next_check": "1小时后"}
+
+    if action == "rebalance":
+        # 重新平衡所有记忆的层级
+        mgr = get_tier_manager()
+        return mgr.reTier_all()
+
+    if action == "auto_archive":
+        # 自动归档低价值记忆
+        mgr = get_tier_manager()
+        return mgr.auto_archive_low_value()
 
     # view action
     if tier == "HOT":
@@ -612,7 +676,9 @@ def memory_tier(action: str = "view", tier: str = "ALL") -> dict:
             "tier": "HOT",
             "summary": summary or "无活动会话",
             "file": str(session_state.file_path),
-            "last_updated": session_state.data.get("last_updated", "never")
+            "last_updated": session_state.data.get("last_updated", "never"),
+            "threshold": "> 0.9",
+            "location": "SESSION-STATE.md (RAM)"
         }
     elif tier == "WARM":
         db = get_db()
@@ -620,7 +686,8 @@ def memory_tier(action: str = "view", tier: str = "ALL") -> dict:
         return {
             "tier": "WARM",
             "stats": stats,
-            "location": CONFIG.get("db_path")
+            "location": CONFIG.get("db_path"),
+            "threshold": "> 0.7"
         }
     elif tier == "COLD":
         cold_memories = tier_manager.get_cold_memories(limit=20)
@@ -628,11 +695,93 @@ def memory_tier(action: str = "view", tier: str = "ALL") -> dict:
             "tier": "COLD",
             "recent_count": len(cold_memories),
             "memories": cold_memories,
-            "location": str(tier_manager.cold_dir)
+            "location": str(tier_manager.cold_dir),
+            "threshold": "> 0.5"
+        }
+    elif tier == "ARCHIVED":
+        mgr = get_tier_manager()
+        stats = mgr.get_tier_stats()
+        return {
+            "tier": "ARCHIVED",
+            "count": stats.get("ARCHIVED", {}).get("count", 0),
+            "location": str(mgr.archive_dir),
+            "threshold": "<= 0.5",
+            "message": "低价值记忆，可彻底删除"
         }
     else:
-        # ALL
-        return tier_manager.stats()
+        # ALL - 返回完整统计
+        return get_tier_stats()
+
+
+def memory_tier_get(memory_id: str) -> dict:
+    """
+    【P2新增】获取记忆所在层级
+    
+    Args:
+        memory_id: 记忆ID
+        
+    Returns:
+        {
+            "memory_id": str,
+            "tier": str,
+            "found": bool,
+            "memory": dict,
+            "location": str
+        }
+    """
+    try:
+        from memory_tier_manager import get_tier as v2_get_tier
+        return v2_get_tier(memory_id)
+    except Exception as e:
+        return api_response(success=False, error=str(e))
+
+
+def memory_tier_move(memory_id: str, tier: str, force: bool = False) -> dict:
+    """
+    【P2新增】移动记忆到指定层级
+    
+    Args:
+        memory_id: 记忆ID
+        tier: 目标层级 (HOT|WARM|COLD|ARCHIVED)
+        force: 是否强制移动（忽略重要性检查）
+        
+    Returns:
+        移动结果
+    """
+    try:
+        from memory_tier_manager import move_tier as v2_move_tier
+        result = v2_move_tier(memory_id, tier, force)
+        return api_response(
+            success=result.get("success", False),
+            data=result,
+            message=result.get("message"),
+            error=None if result.get("success") else result.get("message")
+        )
+    except Exception as e:
+        return api_response(success=False, error=str(e))
+
+
+def memory_tier_stats_v2() -> dict:
+    """
+    【P2新增】获取各层级统计（新版4-Tier统计）
+    
+    Returns:
+        {
+            "HOT": {...},
+            "WARM": {...},
+            "COLD": {...},
+            "ARCHIVED": {...},
+            "total": int,
+            "summary": str,
+            "thresholds": {...},
+            "ttl": {...}
+        }
+    """
+    try:
+        from memory_tier_manager import get_tier_stats as v2_stats
+        return api_response(success=True, data=v2_stats())
+    except Exception as e:
+        return api_response(success=False, error=str(e))
 
 
 def memory_stats() -> dict:
@@ -887,6 +1036,53 @@ def memory_temporal(action: str = "changes", memory_id: str = None, days: int = 
     
     else:
         return api_response(success=False, error=f"未知action: {action}")
+
+
+def memory_temporal_extract(text: str, reference_date: str = None) -> dict:
+    """
+    【P2新增】时序信息提取 - 从文本中提取时间信息
+    
+    支持:
+    - 相对时间: "昨天"、"上周"、"上个月"、"明年"
+    - 绝对时间: "2024年1月15日"、"周一"
+    
+    Args:
+        text: 要分析的文本
+        reference_date: 参考时间 ISO 格式（默认当前时间）
+        
+    Returns:
+        时间信息列表，每个元素包含:
+        - text: 匹配的文本
+        - type: relative|absolute
+        - category: 时间类别
+        - temporal: {"relative": ..., "absolute": ...}
+        - timestamp_range: {"start": ISO, "end": ISO}
+        - event: 提取的事件
+    """
+    from temporal_extract import extract_temporal, temporal_to_timestamp
+    
+    ref = None
+    if reference_date:
+        try:
+            from dateutil import parser
+            ref = parser.parse(reference_date)
+        except Exception:
+            try:
+                ref = datetime.fromisoformat(reference_date.replace('Z', '+00:00'))
+            except Exception:
+                return api_response(success=False, error=f"无法解析参考时间: {reference_date}")
+    
+    results = extract_temporal(text, reference_date=ref)
+    
+    # 转换为可存储格式
+    for r in results:
+        r["_storage"] = temporal_to_timestamp(r)
+    
+    return api_response(success=True, data={
+        "text": text,
+        "count": len(results),
+        "temporal_info": results
+    })
 
 
 def memory_cache(action: str = "stats") -> dict:

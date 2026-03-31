@@ -17,6 +17,38 @@ from typing import Optional
 import lancedb
 import pyarrow as pa
 from memory_config import CONFIG
+from memory_config_multi import get_active_config
+
+# 动态 schema（根据 embedding 维度自适应）
+def _build_schema(dimensions: int = None):
+    """根据 embedding 维度动态构建 schema"""
+    if dimensions is None:
+        try:
+            dimensions = get_active_config().get_embedding_config().get("dimensions", 1024)
+        except Exception:
+            dimensions = 1024
+    return pa.schema([
+        ("id", pa.string()),
+        ("type", pa.string()),
+        ("content", pa.string()),
+        ("summary", pa.string()),
+        ("importance", pa.float32()),
+        ("source", pa.string()),
+        ("transcript", pa.string()),
+        ("tags", pa.string()),  # JSON string
+        ("scope", pa.string()),
+        ("scope_id", pa.string()),
+        ("vector", pa.list_(pa.float32(), dimensions)),  # 动态维度
+        ("created_at", pa.string()),
+        ("updated_at", pa.string()),
+        ("last_accessed", pa.string()),
+        ("access_count", pa.int32()),
+        ("revision_chain", pa.string()),  # JSON string
+        ("superseded_by", pa.string()),
+    ])
+
+# 默认 schema (向后兼容，1024维)
+SCHEMA = _build_schema(1024)
 
 # 配置日志 - 【P1修复】添加错误日志
 logging.basicConfig(
@@ -125,8 +157,8 @@ class LanceDBStore:
             return False
         
         try:
-            # 生成向量
-            from ollama_embed import embedder
+            # 生成向量 - 使用 MultiEmbedder（自动适配所有方案）
+            from multi_embed import get_embedder
             import numpy as np
             
             # 【边界修复】内容长度限制 50KB
@@ -149,16 +181,18 @@ class LanceDBStore:
             except (TypeError, ValueError):
                 tags = "[]"
             
+            embedder = get_embedder()
             raw_vector = embedder.embed(content)
+            dims = embedder.dimensions
             
-            # 确保向量是1024维，padding或截断
+            # 确保向量维度正确（动态适配不同 embedding 提供者）
             if raw_vector:
-                if len(raw_vector) < 1024:
-                    vector = raw_vector + [0.0] * (1024 - len(raw_vector))
+                if len(raw_vector) < dims:
+                    vector = raw_vector + [0.0] * (dims - len(raw_vector))
                 else:
-                    vector = raw_vector[:1024]
+                    vector = raw_vector[:dims]
             else:
-                vector = [0.0] * 1024
+                vector = [0.0] * dims
             
             if not vector:
                 _logger.warning("failed to generate embedding")
@@ -223,9 +257,9 @@ class LanceDBStore:
             return []
         
         try:
-            # 生成查询向量
-            from ollama_embed import embedder
-            query_vector = embedder.embed(query)
+            # 生成查询向量 - 使用 MultiEmbedder
+            from multi_embed import get_embedder
+            query_vector = get_embedder().embed(query)
             
             if not query_vector:
                 _logger.warning("failed to generate query embedding")
@@ -268,9 +302,24 @@ class LanceDBStore:
                 if len(filtered) >= (limit * 3 if use_rerank else limit):
                     break
             
-            # 【新增】Cross-Encoder重排
+            # 【新增】重排：优先 MultiReranker（API方案A/B），回退到 Cross-Encoder（本地方案D）
             if use_rerank and filtered:
-                filtered = self._rerank_cross_encoder(query, filtered, limit)
+                # 优先尝试 API reranker（方案A/B）
+                try:
+                    from multi_rerank import get_reranker
+                    api_reranker = get_reranker()
+                    if api_reranker.is_available():
+                        _logger.debug(f"[Search] Using API reranker: {api_reranker}")
+                        filtered = api_reranker.rerank(query, filtered, top_k=limit)
+                    else:
+                        # 回退到本地 Cross-Encoder
+                        filtered = self._rerank_cross_encoder(query, filtered, limit)
+                except Exception as e:
+                    _logger.debug(f"[Search] API reranker unavailable, trying Cross-Encoder: {e}")
+                    try:
+                        filtered = self._rerank_cross_encoder(query, filtered, limit)
+                    except Exception:
+                        pass
             
             # 更新访问追踪（静默失败，不影响主流程）
             for r in filtered:

@@ -103,6 +103,38 @@ class CrossEncoderReranker:
             print(f"[CrossEncoderReranker] 评分失败: {e}")
             return 0.5
     
+    def scores(self, query: str, candidates: List[Dict]) -> List[tuple]:
+        """
+        对候选记忆批量评分，返回 (doc_id, score) 元组列表
+        
+        Args:
+            query: 查询字符串
+            candidates: 候选记忆列表 [{"id": "...", "content": "...", ...}]
+            
+        Returns:
+            [(doc_id, score), ...] 按分数降序排列
+        """
+        if not candidates:
+            return []
+        
+        if self.model is None:
+            # 模型不可用时返回均匀分数
+            return [(c.get("id", f"doc_{i}"), 0.5) for i, c in enumerate(candidates)]
+        
+        try:
+            pairs = [(query, c.get("content", "")) for c in candidates]
+            scores = self.model.predict(pairs)
+            results = [
+                (c.get("id", f"doc_{i}"), float(scores[i]))
+                for i, c in enumerate(candidates)
+            ]
+            # 按分数降序
+            results.sort(key=lambda x: x[1], reverse=True)
+            return results
+        except Exception as e:
+            print(f"[CrossEncoderReranker] 批量评分失败: {e}")
+            return [(c.get("id", f"doc_{i}"), 0.5) for i, c in enumerate(candidates)]
+    
     def is_available(self) -> bool:
         """检查模型是否可用"""
         return self.model is not None
@@ -118,3 +150,60 @@ def get_reranker() -> CrossEncoderReranker:
     if _reranker is None:
         _reranker = CrossEncoderReranker()
     return _reranker
+
+
+# ============================================================
+# P2-1: 独立的 cross_encoder_score() 函数
+# ============================================================
+
+def cross_encoder_score(
+    query: str,
+    candidates: list,
+    model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+) -> list[tuple]:
+    """
+    对候选文档进行 Cross-Encoder 相关性评分
+    
+    Args:
+        query: 查询字符串
+        candidates: 候选文档列表，支持两种格式：
+                   - [{"id": "...", "content": "..."}, ...]  (dict格式)
+                   - ["文档内容1", "文档内容2", ...]         (字符串格式)
+        model_name: HuggingFace Cross-Encoder 模型名
+        
+    Returns:
+        [(doc_id, score), ...] 按分数降序排列
+        - doc_id: 来自 candidates[i]["id"]，字符串格式则用 f"doc_0" 编号
+        - score:  float, 相关性分数
+        
+    Example:
+        >>> candidates = [
+        ...     {"id": "mem_001", "content": "用户住在上海"},
+        ...     {"id": "mem_002", "content": "用户喜欢Python"},
+        ... ]
+        >>> scores = cross_encoder_score("用户住在哪里", candidates)
+        >>> print(scores)
+        [('mem_001', 0.87), ('mem_002', 0.12)]
+    """
+    if not candidates:
+        return []
+    
+    # 标准化输入：统一为 [{"id": ..., "content": ...}] 格式
+    normalized = []
+    for i, c in enumerate(candidates):
+        if isinstance(c, dict):
+            normalized.append({
+                "id": c.get("id", f"doc_{i}"),
+                "content": c.get("content", str(c))
+            })
+        else:
+            normalized.append({"id": f"doc_{i}", "content": str(c)})
+    
+    # 获取重排器
+    reranker = get_reranker()
+    
+    # 如果传入的模型名与默认不同，创建专用实例
+    if reranker.model_name != model_name:
+        reranker = CrossEncoderReranker(model_name_or_path=model_name)
+    
+    return reranker.scores(query, normalized)
