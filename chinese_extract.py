@@ -88,6 +88,70 @@ class ChineseEntityExtractor:
                 "subject_idx": None,
                 "object_idx": 0,
                 "relation": "mentioned"
+            },
+            # 住在XX
+            {
+                "pattern": r'(?:住在|定居于|位于)([\u4e00-\u9fff]{2,10})',
+                "type": "location",
+                "subject_idx": None,
+                "object_idx": 0,
+                "relation": "lives_in"
+            },
+            # 毕业于XX学校
+            {
+                "pattern": r'(?:毕业于|就读于)([\u4e00-\u9fff]{2,15})(?:大学|学院|学校)',
+                "type": "education",
+                "subject_idx": None,
+                "object_idx": 0,
+                "relation": "graduated_from"
+            },
+            # 职位是XX
+            {
+                "pattern": r'(?:职位是|担任|当)([\u4e00-\u9fff]{2,8})(?:工程|开发|设计|产品|运营|市场|销售|经理|总监| CTO| CEO| CFO| COO| VP)',
+                "type": "position",
+                "subject_idx": None,
+                "object_idx": 0,
+                "relation": "has_position"
+            },
+            # 有XX个朋友
+            {
+                "pattern": r'(?:有|认识|结交了)([\u4e00-\u9fff]{1,5})(?:朋友|同事|伙伴)',
+                "type": "social",
+                "subject_idx": None,
+                "object_idx": 0,
+                "relation": "has_social"
+            },
+            # 不喜欢XX
+            {
+                "pattern": r'(?:不喜欢|讨厌|厌恶|反感)([\u4e00-\u9fffA-Za-z0-9]+)',
+                "type": "dislike",
+                "subject_idx": None,
+                "object_idx": 0,
+                "relation": "dislikes"
+            },
+            # 过敏XX
+            {
+                "pattern": r'(?:对|过敏|敏感)([\u4e00-\u9fffA-Za-z0-9]+)(?:过敏|敏感)',
+                "type": "allergy",
+                "subject_idx": None,
+                "object_idx": 0,
+                "relation": "allergic_to"
+            },
+            # 朋友XX
+            {
+                "pattern": r'(?:朋友|同学|同事)([\u4e00-\u9fff]{1,5})(?:叫|名|是)',
+                "type": "person_known",
+                "subject_idx": None,
+                "object_idx": 0,
+                "relation": "knows"
+            },
+            # 学过XX
+            {
+                "pattern": r'(?:学过|学习过|掌握|精通)([\u4e00-\u9fffA-Za-z0-9]+)',
+                "type": "skill_acquired",
+                "subject_idx": None,
+                "object_idx": 0,
+                "relation": "learned"
             }
         ]
     
@@ -169,16 +233,22 @@ class ChineseEntityExtractor:
     def _infer_entity_type(self, name: str) -> str:
         """推断实体类型"""
         # 公司关键词
-        company_keywords = ["公司", "集团", "企业", "工作室"]
+        company_keywords = ["公司", "集团", "企业", "工作室", "医院", "学校", "银行"]
         for kw in company_keywords:
             if kw in name:
                 return "company"
         
         # 科技公司
-        tech_companies = ["字节跳动", "阿里巴巴", "腾讯", "百度", "京东", "美团", "小米", "华为"]
+        tech_companies = ["字节跳动", "阿里巴巴", "腾讯", "百度", "京东", "美团", "小米", "华为", "网易", "新浪", "搜狐", "快手", "拼多多", "滴滴", "抖音", "微信", "支付宝"]
         for tc in tech_companies:
             if tc in name:
                 return "company"
+        
+        # 城市
+        cities = ["北京", "上海", "深圳", "广州", "杭州", "南京", "成都", "武汉", "西安", "苏州", "天津", "重庆", "长沙", "郑州", "东莞", "青岛", "沈阳", "大连", "厦门", "福州"]
+        for city in cities:
+            if city in name:
+                return "location"
         
         # 技术栈
         all_techs = []

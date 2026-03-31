@@ -374,15 +374,15 @@ class KnowledgeGraphNX:
         
         return results
     
-    def infer_relations(self, entity: str, max_depth: int = 2) -> List[Dict]:
+    def infer_relations(self, entity: str, max_depth: int = 3) -> List[Dict]:
         """
-        【新增】推理实体的潜在关系
+        【P3优化】推理实体的潜在关系
         
         通过分析实体周围的图结构，推断可能的隐含关系
         
         Args:
             entity: 起始实体
-            max_depth: 分析深度
+            max_depth: 分析深度（支持1/2/3跳）
         
         Returns:
             推理结果列表
@@ -408,7 +408,25 @@ class KnowledgeGraphNX:
                             "path": path[0]
                         })
         
-        # 2. 查找同类型实体
+        # 2. 【新增】三度关联（朋友的朋友的朋友）
+        if max_depth >= 3:
+            for neighbor in neighbors[:3]:
+                second_neighbors = list(self.graph.neighbors(neighbor))
+                for sn in second_neighbors:
+                    third_neighbors = list(self.graph.neighbors(sn))
+                    for tn in third_neighbors:
+                        if tn != entity and tn not in neighbors and tn not in second_neighbors:
+                            path = self.find_path(entity, tn, max_depth=3)
+                            if path:
+                                inferences.append({
+                                    "type": "third_degree",
+                                    "target": tn,
+                                    "via": [neighbor, sn],
+                                    "confidence": 0.4,  # 三跳置信度降低
+                                    "path": path[0]
+                                })
+        
+        # 3. 查找同类型实体
         entity_data = self.get_entity(entity)
         if entity_data:
             entity_type = entity_data.get("type", "concept")
