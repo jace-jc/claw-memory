@@ -21,11 +21,14 @@ try:
     from .user_profile import build_user_profile, UserProfile
     from .multimodal import store_image_memory, multimodal_extractor
     from .auto_backup import start_auto_backup, stop_auto_backup, get_scheduler
+    from .performance import get_monitor, record_performance
+    from .errors import MemoryErrorException, handle_memory_error, format_error_response
 except ImportError:
     pass
 
 # Convenience exports
 __all__ = [
+    # Core
     "get_db",
     "get_db_store",
     "Memory",
@@ -33,12 +36,25 @@ __all__ = [
     "ApiResponse",
     "MemoryType",
     "Scope",
+    # Intent
     "classify_query",
     "expand_query",
+    # User
     "build_user_profile",
     "UserProfile",
+    # Multimodal
     "store_image_memory",
+    # Backup
     "start_auto_backup",
     "stop_auto_backup",
+    "get_scheduler",
+    # Performance
+    "get_monitor",
+    "record_performance",
+    # Errors
+    "MemoryErrorException",
+    "handle_memory_error",
+    "format_error_response",
+    # Version
     "__version__",
 ]
