@@ -121,6 +121,117 @@ BENCHMARK_TESTS = [
     },
 ]
 
+# 新增：复杂查询测试
+BENCHMARK_TESTS_EXTENDED = [
+    # 多跳推理测试
+    {
+        "id": "multihop_001",
+        "query": "用户朋友的朋友喜欢什么",
+        "type": "relation",
+        "relevant_keywords": ["朋友", "喜欢"],
+        "expected_types": ["entity", "preference"],
+        "test_memory": "用户的朋友小李的朋友小张喜欢画画"
+    },
+    {
+        "id": "multihop_002",
+        "query": "用户同事使用的技术",
+        "type": "relation",
+        "relevant_keywords": ["同事", "技术", "使用"],
+        "expected_types": ["entity"],
+        "test_memory": "用户的同事张工使用Java和Spring框架开发后端"
+    },
+    
+    # 否定查询测试
+    {
+        "id": "negation_001",
+        "query": "用户不喜欢什么食物",
+        "type": "preference",
+        "relevant_keywords": ["不喜欢", "讨厌", "食物"],
+        "expected_types": ["preference"],
+        "test_memory": "用户不喜欢吃香菜和榴莲，对海鲜过敏"
+    },
+    {
+        "id": "negation_002",
+        "query": "用户不擅长什么",
+        "type": "preference",
+        "relevant_keywords": ["不擅长", "不会", "困难"],
+        "expected_types": ["preference"],
+        "test_memory": "用户不擅长处理财务数据，对数字不敏感"
+    },
+    
+    # 时间范围查询
+    {
+        "id": "timerange_001",
+        "query": "用户2024年做了什么",
+        "type": "temporal",
+        "relevant_keywords": ["2024", "去年", "工作"],
+        "expected_types": ["fact"],
+        "test_memory": "用户在2024年完成了公司内部管理系统开发"
+    },
+    {
+        "id": "timerange_002",
+        "query": "用户这周的计划是什么",
+        "type": "temporal",
+        "relevant_keywords": ["这周", "计划", "安排"],
+        "expected_types": ["task_state"],
+        "test_memory": "用户这周计划完成API文档编写和代码评审"
+    },
+    
+    # 模糊查询测试
+    {
+        "id": "fuzzy_001",
+        "query": "用户的hangzhou联系方式",
+        "type": "fact",
+        "relevant_keywords": ["杭州", "联系", "电话"],
+        "expected_types": ["fact"],
+        "test_memory": "用户在杭州的联系电话是138xxxx1234"
+    },
+    {
+        "id": "fuzzy_002",
+        "query": "用户Phoebe的项目",
+        "type": "entity",
+        "relevant_keywords": ["Phoebe", "项目"],
+        "expected_types": ["entity", "task_state"],
+        "test_memory": "用户和Phoebe一起负责AI平台的架构设计"
+    },
+    
+    # 决策类查询
+    {
+        "id": "decision_001",
+        "query": "用户为什么选择这个方案",
+        "type": "decision",
+        "relevant_keywords": ["选择", "原因", "决定", "方案"],
+        "expected_types": ["decision"],
+        "test_memory": "用户选择React是因为它的生态完善且学习曲线平缓"
+    },
+    {
+        "id": "decision_002",
+        "query": "用户做过什么重要决定",
+        "type": "decision",
+        "relevant_keywords": ["决定", "选择", "决策", "重要"],
+        "expected_types": ["decision"],
+        "test_memory": "用户决定从上海搬到北京发展，已入职新公司"
+    },
+    
+    # 经验教训查询
+    {
+        "id": "lesson_001",
+        "query": "用户从错误中学到什么",
+        "type": "lesson",
+        "relevant_keywords": ["错误", "教训", "学习", "经验"],
+        "expected_types": ["lesson"],
+        "test_memory": "用户从数据库性能问题中学到要提前做索引优化"
+    },
+    {
+        "id": "lesson_002",
+        "query": "用户有什么开发经验",
+        "type": "lesson",
+        "relevant_keywords": ["经验", "教训", "总结"],
+        "expected_types": ["lesson"],
+        "test_memory": "用户总结出代码审查可以显著减少线上bug"
+    },
+]
+
 # 评估指标计算
 def calculate_recall(results: List[dict], test_case: dict) -> float:
     """计算Recall@K"""

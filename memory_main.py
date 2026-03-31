@@ -169,9 +169,15 @@ TOOLS = {
 
 # ==================== 核心函数 ====================
 
-def memory_store(content: str, type: str = "fact", importance: float = 0.5,
-                 tags: list = None, source_id: str = "", transcript: str = "",
-                 scope: str = "user") -> dict:
+def memory_store(
+    content: str,
+    type: str = "fact",
+    importance: float = 0.5,
+    tags: Optional[List[str]] = None,
+    source_id: str = "",
+    transcript: str = "",
+    scope: str = "user"
+) -> Dict[str, Any]:
     """
     存储新记忆
     
@@ -248,7 +254,11 @@ def memory_store(content: str, type: str = "fact", importance: float = 0.5,
     }
 
 
-def memory_search(query: str, limit: int = 5, types: list = None, min_score: float = 0.3,
+def memory_search(
+    query: str,
+    limit: int = 5,
+    types: Optional[List[str]] = None,
+    min_score: float = 0.3,
                   scope: str = None, use_rerank: bool = False) -> dict:
     """
     语义搜索记忆
@@ -287,7 +297,12 @@ def memory_search(query: str, limit: int = 5, types: list = None, min_score: flo
     }
 
 
-def memory_search_rrf(query: str, limit: int = 5, k: int = 60, use_adaptive: bool = True) -> dict:
+def memory_search_rrf(
+    query: str,
+    limit: int = 5,
+    k: int = 60,
+    use_adaptive: bool = True
+) -> Dict[str, Any]:
     """
     【P0新增】RRF融合搜索 - 4通道融合
     

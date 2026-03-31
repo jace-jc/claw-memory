@@ -197,6 +197,117 @@ def quick_backup() -> str:
     return f"备份失败: {result['error']}"
 
 
+def incremental_backup(since: str = None) -> dict:
+    """
+    【P2新增】增量备份 - 只备份自指定时间以来更改的记忆
+    
+    Args:
+        since: ISO格式时间字符串，如 "2026-03-31T00:00:00"
+               如果为None，则使用上次备份时间
+    
+    Returns:
+        增量备份结果
+    """
+    try:
+        from lancedb_store import get_db_store
+        
+        db = get_db_store()
+        if db.table is None:
+            return {"success": False, "error": "数据库未初始化"}
+        
+        # 确定起始时间
+        if since is None:
+            # 查找最近备份时间
+            result = _list_backups()
+            if result.get("backups") and len(result["backups"]) > 0:
+                since = result["backups"][0]["created"]
+            else:
+                since = "1970-01-01T00:00:00"
+        
+        # 查询更改的记忆
+        since_dt = datetime.fromisoformat(since.replace("Z", "+00:00"))
+        
+        # 获取所有记忆并过滤
+        total = db.table.count_rows()
+        all_memories = db.table.head(min(total, 100000)).to_pylist()
+        
+        changed = [
+            m for m in all_memories 
+            if m.get("updated_at") and 
+            datetime.fromisoformat(m["updated_at"].replace("Z", "+00:00")) > since_dt
+        ]
+        
+        # 保存增量备份
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = BACKUP_DIR / f"memory_incr_{timestamp}.json"
+        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        
+        backup_data = {
+            "version": "2.8.0",
+            "type": "incremental",
+            "since": since,
+            "created_at": datetime.now().isoformat(),
+            "memories": changed,
+            "count": len(changed)
+        }
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(backup_data, f, ensure_ascii=False, indent=2)
+        
+        return {
+            "success": True,
+            "message": f"增量备份已创建: {output_path}",
+            "since": since,
+            "changed_count": len(changed)
+        }
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def auto_backup_schedule(interval_hours: int = 24, max_backups: int = 7) -> dict:
+    """
+    【P2新增】自动备份调度 - 清理旧备份，保留最新N个
+    
+    Args:
+        interval_hours: 备份间隔（小时）
+        max_backups: 最多保留备份数
+    
+    Returns:
+        调度结果
+    """
+    try:
+        import time
+        
+        # 创建新备份
+        result = _create_backup()
+        if not result["success"]:
+            return result
+        
+        # 列出备份并清理旧备份
+        result = _list_backups()
+        backups = result.get("backups", [])
+        
+        # 删除多余备份（保留最新max_backups个）
+        deleted = 0
+        for backup in backups[max_backups:]:
+            try:
+                Path(backup["path"]).unlink()
+                deleted += 1
+            except:
+                pass
+        
+        return {
+            "success": True,
+            "message": f"自动备份完成，保留{min(len(backups), max_backups)}个，删除{deleted}个旧备份",
+            "deleted": deleted,
+            "kept": min(len(backups) + 1, max_backups)
+        }
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 if __name__ == "__main__":
     # 测试
     print("=== 备份测试 ===")
