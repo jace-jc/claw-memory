@@ -161,3 +161,7 @@ def get_ollama_pool() -> OllamaConnectionPool:
     if _ollama_pool is None:
         _ollama_pool = OllamaConnectionPool()
     return _ollama_pool
+
+
+# 别名
+get_pool = get_ollama_pool

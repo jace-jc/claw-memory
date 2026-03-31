@@ -198,10 +198,10 @@ def memory_store(
             "message": "噪音内容已过滤（问候/确认/纯emoji）"
         }
     
-    # 【修复#3-4】Ollama离线检查
-    from ollama_embed import embedder
-    test_vec = embedder.embed("test")
-    if not test_vec:
+    # 【P0优化】使用连接池检查Ollama健康状态，避免频繁embed调用
+    from ollama_pool import get_pool
+    pool = get_pool()
+    if not pool.is_healthy():
         return {
             "success": False,
             "memory_id": None,
