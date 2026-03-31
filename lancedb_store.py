@@ -3,11 +3,14 @@ LanceDB 存储模块 - 向量存储和搜索
 修复版：使用 PyArrow schema，支持 LanceDB 0.27+
 """
 import os
+import re
+import math
 import json
 import uuid
 import time
 import traceback
 import logging
+import concurrent.futures
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -858,13 +861,11 @@ class LanceDBStore:
     
     def _kg_aware_search(self, query: str, limit: int) -> list:
         """
-        【P0修复】知识图谱感知搜索 - 真正利用实体关系和传递推理
+        【P2优化】知识图谱感知搜索 - 支持稀疏图fallback
 
         改进点：
-        1. 使用KG的search_entities而非正则匹配
-        2. 使用find_path做传递推理
-        3. 使用infer_relations推断潜在关联
-        4. 综合图中心性、路径强度计算KG分数
+        1. 当KG为空或节点数过少时，fallback到关键词搜索
+        2. 保持KG增强逻辑，但更鲁棒
         """
         try:
             from kg_networkx import get_kg_nx
@@ -872,6 +873,36 @@ class LanceDBStore:
             kg = get_kg_nx()
             kg_results = []
             
+            # 【P2新增】检查KG是否足够丰富
+            kg_node_count = kg.graph.number_of_nodes()
+            kg_edge_count = kg.graph.number_of_edges()
+            
+            # 如果KG太稀疏（<10个节点或<5条边），使用关键词增强
+            if kg_node_count < 10 or kg_edge_count < 5:
+                # Fallback: 使用关键词匹配增强
+                keywords = query.replace("用户", "").replace("什么", "").split()[:5]
+                for kw in keywords:
+                    if len(kw) > 1:
+                        kw_results = self.search(kw, limit=limit, use_rerank=False)
+                        for r in kw_results:
+                            r_copy = r.copy()
+                            r_copy["kg_score"] = 0.3  # 较低的KG分数
+                            r_copy["_kg_score"] = 0.3
+                            r_copy["kg_fallback"] = True
+                            kg_results.append(r_copy)
+                
+                if kg_results:
+                    # 去重并返回
+                    seen_ids = set()
+                    unique = []
+                    for r in kg_results:
+                        if r.get("id") not in seen_ids:
+                            seen_ids.add(r.get("id"))
+                            unique.append(r)
+                    unique.sort(key=lambda x: x.get("kg_score", 0), reverse=True)
+                    return unique[:limit]
+            
+            # 原有KG逻辑（当KG足够丰富时）
             # 1. 在知识图谱中搜索相关实体
             matched_entities = kg.search_entities(query, limit=5)
             
