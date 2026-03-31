@@ -9,7 +9,7 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any, Dict, List, Union
 from memory_extract import extract_from_messages, is_noise, quick_extract, deep_extract
 from memory_config import CONFIG
 
@@ -28,8 +28,12 @@ def get_db():
 # ==================== 统一响应格式 ====================
 # 【P0修复】解决API返回格式不统一的问题
 
-def api_response(success: bool = True, data: any = None, error: str = None,
-                message: str = None) -> dict:
+def api_response(
+    success: bool = True,
+    data: Any = None,
+    error: Optional[str] = None,
+    message: Optional[str] = None
+) -> Dict[str, Any]:
     """
     统一API响应格式
     

@@ -47,9 +47,9 @@ embedding-openai = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/openclaw/claw-memory"
-Documentation = "https://github.com/openclaw/claw-memory#readme"
-Repository = "https://github.com/openclaw/claw-memory"
+Homepage = "https://github.com/jace-jc/claw-memory"
+Documentation = "https://github.com/jace-jc/claw-memory#readme"
+Repository = "https://github.com/jace-jc/claw-memory"
 
 [tool.setuptools.packages.find]
 where = ["."]
