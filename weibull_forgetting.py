@@ -26,18 +26,25 @@ class WeibullDecay:
     - scale (λ): 特征时间尺度，决定衰减速度
     """
     
-    def __init__(self, shape: float = 1.5, scale: float = 30.0):
+    def __init__(self, shape: float = 1.5, scale: float = 30.0, min_importance: float = 0.3):
         """
         Args:
             shape: 形状参数（默认1.5，更符合人类记忆）
             scale: 尺度参数（默认30天）
+            min_importance: 最低重要性阈值，高于此值的记忆受到保护
         """
         self.shape = shape
         self.scale = scale
+        self.min_importance = min_importance
     
     def calculate_decay(self, memory_age_days: float, initial_importance: float = 1.0) -> float:
         """
         计算经过时间后的记忆重要性
+        
+        【P2优化】重要记忆保护机制：
+        - 初始重要性 >= 0.9 的记忆享有2倍衰减时间保护
+        - 初始重要性 >= 0.7 的记忆享有1.5倍衰减时间保护
+        - 低于 min_importance 阈值的记忆直接返回阈值（不衰减到0）
         
         Args:
             memory_age_days: 记忆年龄（天）
@@ -49,9 +56,22 @@ class WeibullDecay:
         if memory_age_days <= 0:
             return initial_importance
         
+        # 【P2新增】重要记忆保护：减缓高重要性记忆的衰减
+        if initial_importance >= 0.9:
+            # 重要记忆：使用2倍时间尺度
+            effective_scale = self.scale * 2.0
+        elif initial_importance >= 0.7:
+            # 中等重要：使用1.5倍时间尺度
+            effective_scale = self.scale * 1.5
+        else:
+            effective_scale = self.scale
+        
         # Weibull衰减公式
-        decay = math.exp(-((memory_age_days / self.scale) ** self.shape))
-        return initial_importance * decay
+        decay = math.exp(-((memory_age_days / effective_scale) ** self.shape))
+        decayed = initial_importance * decay
+        
+        # 【P2新增】防止重要性降到阈值以下
+        return max(decayed, self.min_importance * initial_importance)
     
     def should_forget(self, memory: Dict, threshold: float = 0.2) -> bool:
         """
