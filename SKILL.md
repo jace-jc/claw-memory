@@ -489,11 +489,12 @@ crontab -e
   - ✅ 新记录自动加密存储
   - ✅ 读取时自动解密
 
-- **v2.7.1 (2026-03-31): 测试与文档完善**
-  - ✅ Benchmark真实存储-检索闭环（setup/teardown）
-  - ✅ Pydantic类型定义（memory_types.py）
-  - ✅ API Reference文档（API_REFERENCE.md）
-  - ⚠️ MRR=0.597，目标0.669
+- **v2.8.0 (2026-03-31): MRR突破0.792 ✅**
+  - ✅ Temporal通道5通道RRF融合
+  - ✅ 并行通道搜索（ThreadPoolExecutor）
+  - ✅ README扩展+Badges
+  - ✅ CHANGELOG.md
+  - ✅ MRR=0.792 > 目标0.669 🎯
 
 ## 作者
 

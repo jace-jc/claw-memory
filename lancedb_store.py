@@ -354,9 +354,9 @@ class LanceDBStore:
         
         # 默认等权重
         if weights is None:
-            weights = {"vector": 0.25, "bm25": 0.25, "importance": 0.25, "kg": 0.25}
+            weights = {"vector": 0.25, "bm25": 0.25, "importance": 0.25, "kg": 0.25, "temporal": 0.25}
         
-        channel_names = ["vector", "bm25", "importance", "kg"]
+        channel_names = ["vector", "bm25", "importance", "kg", "temporal"]
         
         # 每个文档的RRF累加分数
         rrf_scores = defaultdict(float)
@@ -550,13 +550,14 @@ class LanceDBStore:
     
     def search_rrf(self, query: str, limit: int = 5, k: int = 60, use_adaptive: bool = True) -> list:
         """
-        【新增】RRF融合搜索 - 4通道融合（支持自适应权重）
+        【新增】RRF融合搜索 - 5通道融合（支持自适应权重）
         
         Channels:
         1. Vector similarity
         2. BM25 keyword
         3. Importance score
         4. Knowledge Graph (实体关联)
+        5. Temporal (时序感知)
         
         Args:
             query: 搜索查询
@@ -578,31 +579,50 @@ class LanceDBStore:
                 except:
                     pass
             
-            # Channel 1: Vector search
-            vector_results = self.search(query, limit=limit*3, use_rerank=False)
-            for i, r in enumerate(vector_results):
-                r["_final_score"] = 1.0 - r.get("_distance", 0.5)
-                r["_vector_score"] = r["_final_score"]
+            # 【P0优化】并行执行5个通道搜索，显著降低延迟
+            import concurrent.futures
             
-            # Channel 2: BM25 keyword search
-            bm25_results = self._get_bm25_scores(query, limit=limit*3)
-            for r in bm25_results:
-                r["_bm25_score"] = r.get("bm25_score", 0)
+            def _run_vector():
+                results = self.search(query, limit=limit*3, use_rerank=False)
+                for r in results:
+                    r["_final_score"] = 1.0 - r.get("_distance", 0.5)
+                    r["_vector_score"] = r["_final_score"]
+                return results
             
-            # Channel 3: Importance score
-            importance_results = self._get_importance_scores(limit=limit*3)
-            for r in importance_results:
-                r["_importance_score"] = r.get("importance_score", r.get("importance", 0.5))
+            def _run_bm25():
+                results = self._get_bm25_scores(query, limit=limit*3)
+                for r in results:
+                    r["_bm25_score"] = r.get("bm25_score", 0)
+                return results
             
-            # Channel 4: Knowledge Graph aware (如果query中有实体)
-            kg_results = self._kg_aware_search(query, limit=limit*3)
-            for r in kg_results:
-                r["_kg_score"] = r.get("_kg_score", r.get("importance", 0.5))
+            def _run_importance():
+                results = self._get_importance_scores(limit=limit*3)
+                for r in results:
+                    r["_importance_score"] = r.get("importance_score", r.get("importance", 0.5))
+                return results
             
-            # Channel 5: 【P1新增】时序感知搜索
-            temporal_results = self._temporal_search(query, limit=limit*3)
-            for r in temporal_results:
-                r["_temporal_score"] = r.get("_temporal_score", 0.5)
+            def _run_kg():
+                results = self._kg_aware_search(query, limit=limit*3)
+                for r in results:
+                    r["_kg_score"] = r.get("_kg_score", r.get("importance", 0.5))
+                return results
+            
+            def _run_temporal():
+                results = self._temporal_search(query, limit=limit*3)
+                for r in results:
+                    r["_temporal_score"] = r.get("_temporal_score", 0.5)
+                return results
+            
+            # 并行执行所有通道
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                futures = [
+                    executor.submit(_run_vector),
+                    executor.submit(_run_bm25),
+                    executor.submit(_run_importance),
+                    executor.submit(_run_kg),
+                    executor.submit(_run_temporal),
+                ]
+                vector_results, bm25_results, importance_results, kg_results, temporal_results = [f.result() for f in concurrent.futures.as_completed(futures)]
             
             # RRF融合 (5通道)
             all_channels = [v for v in [vector_results, bm25_results, importance_results, kg_results, temporal_results] if v]

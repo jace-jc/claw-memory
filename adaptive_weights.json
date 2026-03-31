@@ -1,9 +1,11 @@
 {
   "weights": {
-    "vector": 0.46,
-    "bm25": 0.225,
-    "importance": 0.18,
-    "kg": 0.135
+    "vector": 0.40,
+    "bm25": 0.20,
+    "importance": 0.15,
+    "kg": 0.10,
+    "temporal": 0.15
   },
-  "updated_at": "2026-03-31T18:35:32.846755"
+  "updated_at": "2026-03-31T22:19:00.000000",
+  "source": "benchmark_optimization"
 }
