@@ -569,6 +569,38 @@ class LanceDBStore:
             RRF融合排序结果
         """
         try:
+            # 【P2新增】意图分类 + 查询扩展
+            try:
+                from intent_classifier import classify_query, expand_query, get_classifier
+                classifier = get_classifier()
+                intent, intent_confidence = classifier.classify(query)
+                expanded_queries = classifier.expand_query(query)
+                
+                # 如果是特殊意图，使用意图专用权重
+                if intent_confidence > 0.75:
+                    weights = classifier.get_channel_weights(intent)
+                    _logger.debug(f"Intent: {intent.value} (conf={intent_confidence:.2f}), using adjusted weights")
+                
+                # 对于模糊查询，尝试所有扩展查询
+                if intent.value == "fuzzy" and len(expanded_queries) > 1:
+                    # 收集所有扩展查询的结果
+                    all_results = []
+                    for eq in expanded_queries:
+                        eq_results = self._get_bm25_scores(eq, limit=limit*2)
+                        all_results.extend(eq_results)
+                    # 去重
+                    seen = set()
+                    unique_results = []
+                    for r in all_results:
+                        if r.get("id") not in seen:
+                            seen.add(r.get("id"))
+                            unique_results.append(r)
+                    # 用BM25结果覆盖向量搜索
+                    if unique_results:
+                        return unique_results[:limit]
+            except ImportError:
+                pass
+            
             # 获取自适应权重
             weights = None
             if use_adaptive:
