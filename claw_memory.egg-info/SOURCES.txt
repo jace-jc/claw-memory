@@ -1,0 +1,7 @@
+README.md
+pyproject.toml
+claw_memory.egg-info/PKG-INFO
+claw_memory.egg-info/SOURCES.txt
+claw_memory.egg-info/dependency_links.txt
+claw_memory.egg-info/requires.txt
+claw_memory.egg-info/top_level.txt

@@ -1,0 +1,190 @@
+{
+  "timestamp": "2026-03-31T20:28:28.852406",
+  "summary": {
+    "total_tests": 12,
+    "overall": {
+      "avg_mrr": 0.5416666666666666,
+      "avg_ndcg": 0.43862441937624425,
+      "avg_latency": 976.306676864624,
+      "avg_relevance": 0.13703703703703704
+    },
+    "by_type": {
+      "fact": {
+        "count": 3,
+        "avg_mrr": 0.3333333333333333,
+        "avg_ndcg": 0.2933333333333334,
+        "avg_latency": 899.667501449585
+      },
+      "preference": {
+        "count": 3,
+        "avg_mrr": 0.8333333333333334,
+        "avg_ndcg": 0.5788613138686132,
+        "avg_latency": 941.2513573964437
+      },
+      "entity": {
+        "count": 2,
+        "avg_mrr": 0.5,
+        "avg_ndcg": 0.42800000000000005,
+        "avg_latency": 992.4315214157104
+      },
+      "temporal": {
+        "count": 2,
+        "avg_mrr": 0.0,
+        "avg_ndcg": 0.0,
+        "avg_latency": 1033.1063270568848
+      },
+      "relation": {
+        "count": 2,
+        "avg_mrr": 1.0,
+        "avg_ndcg": 0.8954545454545455,
+        "avg_latency": 1070.923924446106
+      }
+    }
+  },
+  "results": [
+    {
+      "test_id": "fact_001",
+      "query": "用户的工作是什么",
+      "type": "fact",
+      "results_count": 5,
+      "latency_ms": 920.4831123352051,
+      "recall": 0.75,
+      "mrr": 1.0,
+      "ndcg": 0.8800000000000001,
+      "relevance": 0.4166666666666667,
+      "top_result": "用户在Google工作，是高级工程师"
+    },
+    {
+      "test_id": "fact_002",
+      "query": "用户的名字叫什么",
+      "type": "fact",
+      "results_count": 5,
+      "latency_ms": 879.0693283081055,
+      "recall": 0.0,
+      "mrr": 0.0,
+      "ndcg": 0.0,
+      "relevance": 0.0,
+      "top_result": "用户在Google工作，是高级工程师"
+    },
+    {
+      "test_id": "fact_003",
+      "query": "用户在哪里住",
+      "type": "fact",
+      "results_count": 5,
+      "latency_ms": 899.4500637054443,
+      "recall": 0.0,
+      "mrr": 0.0,
+      "ndcg": 0.0,
+      "relevance": 0.0,
+      "top_result": "用户在Google工作，是高级工程师"
+    },
+    {
+      "test_id": "pref_001",
+      "query": "用户喜欢什么编程语言",
+      "type": "preference",
+      "results_count": 5,
+      "latency_ms": 915.8611297607422,
+      "recall": 0.8,
+      "mrr": 1.0,
+      "ndcg": 0.854014598540146,
+      "relevance": 0.3333333333333333,
+      "top_result": "Python编程语言是程序员最爱"
+    },
+    {
+      "test_id": "pref_002",
+      "query": "用户的饮食偏好",
+      "type": "preference",
+      "results_count": 5,
+      "latency_ms": 945.594072341919,
+      "recall": 0.4,
+      "mrr": 0.5,
+      "ndcg": 0.30656934306569344,
+      "relevance": 0.06666666666666667,
+      "top_result": "评测偏好数据"
+    },
+    {
+      "test_id": "pref_003",
+      "query": "用户喜欢什么音乐",
+      "type": "preference",
+      "results_count": 5,
+      "latency_ms": 962.2988700866699,
+      "recall": 0.5,
+      "mrr": 1.0,
+      "ndcg": 0.5760000000000001,
+      "relevance": 0.08333333333333333,
+      "top_result": "测试偏好：用户喜欢Python"
+    },
+    {
+      "test_id": "entity_001",
+      "query": "用户认识哪些人",
+      "type": "entity",
+      "results_count": 5,
+      "latency_ms": 982.0129871368408,
+      "recall": 0.0,
+      "mrr": 0.0,
+      "ndcg": 0.0,
+      "relevance": 0.0,
+      "top_result": "用户在Google工作，是高级工程师"
+    },
+    {
+      "test_id": "entity_002",
+      "query": "用户使用什么工具",
+      "type": "entity",
+      "results_count": 5,
+      "latency_ms": 1002.8500556945801,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "ndcg": 0.8560000000000001,
+      "relevance": 0.16666666666666666,
+      "top_result": "用户的偏好是使用现代前端技术，包括React、Vue等"
+    },
+    {
+      "test_id": "temporal_001",
+      "query": "用户最近在做什么项目",
+      "type": "temporal",
+      "results_count": 5,
+      "latency_ms": 1026.0846614837646,
+      "recall": 0.0,
+      "mrr": 0.0,
+      "ndcg": 0.0,
+      "relevance": 0.0,
+      "top_result": "用户在Google工作，是高级工程师"
+    },
+    {
+      "test_id": "temporal_002",
+      "query": "用户以前喜欢什么",
+      "type": "temporal",
+      "results_count": 5,
+      "latency_ms": 1040.1279926300049,
+      "recall": 0.0,
+      "mrr": 0.0,
+      "ndcg": 0.0,
+      "relevance": 0.0,
+      "top_result": "测试偏好：用户喜欢Python"
+    },
+    {
+      "test_id": "relation_001",
+      "query": "用户工作用的技术栈",
+      "type": "relation",
+      "results_count": 5,
+      "latency_ms": 1065.7658576965332,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "relevance": 0.4666666666666666,
+      "top_result": "用户在Shopify公司工作，主要使用React技术栈"
+    },
+    {
+      "test_id": "relation_002",
+      "query": "用户朋友的爱好",
+      "type": "relation",
+      "results_count": 5,
+      "latency_ms": 1076.0819911956787,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "ndcg": 0.7909090909090909,
+      "relevance": 0.1111111111111111,
+      "top_result": "测试偏好：用户喜欢Python"
+    }
+  ]
+}

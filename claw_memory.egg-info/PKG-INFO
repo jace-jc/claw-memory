@@ -1,0 +1,111 @@
+Metadata-Version: 2.4
+Name: claw-memory
+Version: 2.7.1
+Summary: AI Memory System with RRF search, knowledge graph, and temporal tracking
+Author-email: Claw Team <claw@example.com>
+License: MIT
+Project-URL: Homepage, https://github.com/openclaw/claw-memory
+Project-URL: Documentation, https://github.com/openclaw/claw-memory#readme
+Project-URL: Repository, https://github.com/openclaw/claw-memory
+Keywords: memory,ai,vector-search,knowledge-graph,rrf
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: lancedb>=0.27.0
+Requires-Dist: pyarrow>=14.0.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: networkx>=3.0
+Requires-Dist: cryptography>=41.0.0
+Requires-Dist: pydantic>=2.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Provides-Extra: embedding-ollama
+Requires-Dist: ollama>=0.1.0; extra == "embedding-ollama"
+Provides-Extra: embedding-openai
+Requires-Dist: openai>=1.0.0; extra == "embedding-openai"
+
+# Claw Memory
+
+A local-first AI memory system with RRF search, knowledge graph, and temporal tracking.
+
+## Features
+
+- **RRF 5-Channel Fusion**: Vector + BM25 + Importance + Knowledge Graph + Temporal
+- **Cross-Encoder Reranking**: Semantic-level result refinement
+- **Knowledge Graph**: Entity disambiguation and transitive reasoning
+- **Temporal Tracking**: Time-aware memory decay and prioritization
+- **E2E Encryption**: Zero-knowledge storage encryption
+- **Adaptive Weights**: Learning from user feedback
+
+## Installation
+
+```bash
+# From source
+pip install .
+
+# With embedding support
+pip install .[embedding-ollama]
+pip install .[embedding-openai]
+```
+
+## Quick Start
+
+```python
+from claw_memory import get_db
+
+# Initialize
+db = get_db()
+
+# Store a memory
+db.store({
+    "content": "用户的名字叫张三",
+    "type": "fact",
+    "importance": 0.9
+})
+
+# Search
+results = db.search_rrf("用户名字", limit=5)
+
+# Get stats
+stats = db.get_stats()
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────┐
+│           CAPTURE (Input)                │
+│  rules → real-time extract → deep extract │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│           STORE (Hot/Warm/Cold)          │
+│  SESSION-STATE → LanceDB → Markdown    │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│           RETRIEVE (RRF 5-Channel)      │
+│  Vector + BM25 + Importance + KG + Time │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│           RERANK (Cross-Encoder)        │
+└─────────────────────────────────────────┘
+```
+
+## Documentation
+
+See [API_REFERENCE.md](API_REFERENCE.md) for detailed API documentation.
+
+## License
+
+MIT

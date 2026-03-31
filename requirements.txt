@@ -1,0 +1,24 @@
+# Claw Memory 依赖清单
+# 版本: v1.8.0
+
+# 核心依赖
+lancedb>=0.27.0
+pyarrow>=14.0.0
+
+# 向量模型
+sentence-transformers>=2.2.0
+
+# 网络请求（Cross-Encoder/Ollama调用）
+requests>=2.31.0
+
+# 知识图谱
+networkx>=3.2.0
+
+# 可选：更好的中文分词（如果安装则自动使用）
+# jieba>=0.42.0
+
+# 缓存
+diskcache>=5.6.0
+
+# 性能监控（可选）
+# psutil>=5.9.0

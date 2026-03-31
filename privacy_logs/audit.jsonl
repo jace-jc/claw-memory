@@ -1,0 +1,4 @@
+{"timestamp": "2026-03-31T18:38:53.428523", "operation": "export", "action": "data_export_request"}
+{"timestamp": "2026-03-31T18:38:53.452792", "operation": "export", "action": "data_export_complete", "record_count": 67}
+{"timestamp": "2026-03-31T18:39:21.021247", "operation": "export", "action": "data_export_request"}
+{"timestamp": "2026-03-31T18:39:21.041470", "operation": "export", "action": "data_export_complete", "record_count": 67}

@@ -1,0 +1,20 @@
+name: claw-memory
+version: "1.0.2"
+description: |
+  本地优先的AI记忆系统 - 全部使用 Ollama (bge-m3 + qwen3.5)，零 API 成本
+  混合触发：实时轻量过滤 + 会话结束深度抽取 + 每周批量整理
+triggers:
+  - "memory_store"
+  - "memory_search"
+  - "memory_recall"
+  - "memory_forget"
+  - "记忆"
+  - "记得"
+  - "保存"
+capabilities:
+  memory: true
+  vector_search: true
+requires:
+  ollama: true
+  lancedb: true
+entry: memory_main.py
