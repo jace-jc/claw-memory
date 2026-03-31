@@ -26,15 +26,19 @@ class IntentClassifier:
     NEGATION_WORDS = [
         "不", "没", "无", "非", "别", "不要", "不会", "不是",
         "讨厌", "反感", "拒绝", "避免", "排除",
-        "从没", "从未", "从不", "从来不"
+        "从没", "从未", "从不", "从来不",
+        # 新增
+        "不擅长", "不会", "不精", "不熟悉", "不习惯",
+        "难以", "困难", "害怕", "担心", "顾虑"
     ]
     
     # 否定模式
     NEGATION_PATTERNS = [
-        r"不(是|喜欢|会|能|知道|想|愿|应该)",
+        r"不(是|喜欢|会|能|知道|想|愿|应该|擅长)",
         r"(没|无|非)常",
         r"(讨厌|反感|拒绝|避免)",
         r"从(没|未|不)有",
+        r"不.*什么$",  # 不擅长什么
     ]
     
     # 时间词
@@ -51,19 +55,26 @@ class IntentClassifier:
     LESSON_WORDS = [
         "学", "教训", "经验", "总结", "明白", "懂得",
         "学到", "学会", "掌握", "理解", "发现",
-        "错误", "失败", "问题", "反思", "复盘"
+        "错误", "失败", "问题", "反思", "复盘",
+        # 新增
+        "知道", "清楚", "了解", "体会", "领悟",
+        "NOTE", "注意", "提醒", "警告"
     ]
     
     # decision关键词
     DECISION_WORDS = [
         "选择", "决定", "决策", "取舍", "取舍",
-        "为什么选", "为什么决定", "原因", "理由"
+        "为什么选", "为什么决定", "原因", "理由",
+        # 新增
+        "最终", "最后", "采取", "采用", "用了",
+        "用过", "用了什么"
     ]
     
     # 多跳模式
     MULTIHOP_PATTERNS = [
         r"朋友的", r"同事的", r"老板的", r"家人的",
         r".+的.+的",  # X的Y的Z
+        r"使用的技术",  # A使用的B
     ]
     
     # 拼音-中文映射（常见）
@@ -100,17 +111,17 @@ class IntentClassifier:
         if self._is_multihop(query):
             return QueryIntent.MULTIHOP, 0.85
         
-        # 3. 检查模糊/拼音
-        if self._is_fuzzy(query):
-            return QueryIntent.FUZZY, 0.8
+        # 3. 检查lesson（优先于关键词分类）
+        if self._is_lesson(query):
+            return QueryIntent.LESSON, 0.85
         
         # 4. 检查时间词
         if self._is_temporal(query):
             return QueryIntent.TEMPORAL, 0.85
         
-        # 5. 检查lesson
-        if self._is_lesson(query):
-            return QueryIntent.LESSON, 0.8
+        # 5. 检查模糊/拼音
+        if self._is_fuzzy(query):
+            return QueryIntent.FUZZY, 0.8
         
         # 6. 检查decision
         if self._is_decision(query):
@@ -161,8 +172,11 @@ class IntentClassifier:
     
     def _is_lesson(self, query: str) -> bool:
         """检查是否是lesson查询"""
+        # 经验、教训等直接触发
+        if any(word in query for word in ["经验", "教训", "学到", "学会"]):
+            return True
         count = sum(1 for word in self.LESSON_WORDS if word in query)
-        return count >= 2
+        return count >= 1
     
     def _is_decision(self, query: str) -> bool:
         """检查是否是decision查询"""
@@ -214,6 +228,23 @@ class IntentClassifier:
                 expanded = query_lower.replace(pinyin, chinese)
                 queries.append(expanded)
         
+        # 同义词扩展
+        synonyms = {
+            "经验": ["总结", "知道", "了解", "教训", "学"],
+            "教训": ["错误", "失败", "问题", "反思"],
+            "开发经验": ["开发", "代码", "编程", "开发过"],
+            "擅长": ["会", "能", "精", "熟悉"],
+            "不擅长": ["不会", "难以", "困难"],
+            "做过": ["做", "完成", "进行", "参与"],
+        }
+        
+        for word, syns in synonyms.items():
+            if word in query:
+                for syn in syns:
+                    expanded = query.replace(word, syn)
+                    if expanded not in queries:
+                        queries.append(expanded)
+        
         # 否定查询处理 - 提取否定目标
         if self._is_negation(query):
             # "用户不喜欢什么" -> 添加"不喜欢"的肯定形式
@@ -221,6 +252,11 @@ class IntentClassifier:
                 if neg_word in query:
                     queries.append(query.replace("不" + neg_word, neg_word))
                     queries.append(query.replace("不喜欢", "喜欢"))
+            
+            # "不擅长什么" -> "擅长"
+            if "不擅长" in query:
+                queries.append(query.replace("不擅长", "擅长"))
+                queries.append(query.replace("不擅长什么", "什么"))
         
         return queries
     

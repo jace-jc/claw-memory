@@ -581,6 +581,46 @@ class LanceDBStore:
                     weights = classifier.get_channel_weights(intent)
                     _logger.debug(f"Intent: {intent.value} (conf={intent_confidence:.2f}), using adjusted weights")
                 
+                # 【P2优化】对于否定查询，使用扩展查询 + BM25优先
+                if intent.value == "negation" and len(expanded_queries) > 1:
+                    all_results = []
+                    for eq in expanded_queries:
+                        eq_results = self._get_bm25_scores(eq, limit=limit*3)
+                        for r in eq_results:
+                            # 额外boost包含否定词的结果
+                            content = r.get("content", "")
+                            if any(neg in content for neg in ["不", "没", "无", "非", "讨厌", "拒绝", "困难", "难以"]):
+                                r["bm25_score"] = r.get("bm25_score", 0) * 1.5
+                        all_results.extend(eq_results)
+                    # 去重
+                    seen = set()
+                    unique_results = []
+                    for r in all_results:
+                        if r.get("id") not in seen:
+                            seen.add(r.get("id"))
+                            unique_results.append(r)
+                    # 按BM25分数排序
+                    unique_results.sort(key=lambda x: x.get("bm25_score", 0), reverse=True)
+                    if unique_results:
+                        return unique_results[:limit]
+                
+                # 【P2优化】对于lesson查询，使用扩展同义词
+                if intent.value == "lesson" and len(expanded_queries) > 1:
+                    all_results = []
+                    for eq in expanded_queries:
+                        eq_results = self._get_bm25_scores(eq, limit=limit*2)
+                        all_results.extend(eq_results)
+                    # 去重并排序
+                    seen = set()
+                    unique_results = []
+                    for r in all_results:
+                        if r.get("id") not in seen:
+                            seen.add(r.get("id"))
+                            unique_results.append(r)
+                    unique_results.sort(key=lambda x: x.get("bm25_score", 0), reverse=True)
+                    if unique_results:
+                        return unique_results[:limit]
+                
                 # 对于模糊查询，尝试所有扩展查询
                 if intent.value == "fuzzy" and len(expanded_queries) > 1:
                     # 收集所有扩展查询的结果
