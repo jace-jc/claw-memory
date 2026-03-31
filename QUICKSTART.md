@@ -1,126 +1,189 @@
 # Claw Memory 快速入门
 
-> 5分钟上手 AI 记忆系统
+## 🚀 5分钟快速开始
 
-## 安装
+### Step 1: 安装模型
 
 ```bash
-pip install claw-memory
+# 安装嵌入模型
+ollama pull bge-m3
+
+# 安装LLM模型
+ollama pull qwen3.5:27b
 ```
 
-## 基本使用
-
-### 1. 初始化
+### Step 2: 存储记忆
 
 ```python
-from claw_memory import get_db
+from claw_memory import memory_store
 
-db = get_db()
-```
-
-### 2. 存储记忆
-
-```python
-# 存储简单事实
-db.store({
-    "content": "用户的名字叫张三",
-    "type": "fact",
-    "importance": 0.9
-})
+# 存储事实
+memory_store(
+    content="用户的名字叫张三，是一名软件工程师",
+    type="fact",
+    importance=0.9
+)
 
 # 存储偏好
-db.store({
-    "content": "用户喜欢川菜和火锅",
-    "type": "preference",
-    "importance": 0.8
-})
+memory_store(
+    content="用户喜欢川菜，讨厌加班",
+    type="preference",
+    importance=0.8
+)
 
 # 存储决策
-db.store({
-    "content": "用户决定使用React框架",
-    "type": "decision",
-    "importance": 0.7
-})
+memory_store(
+    content="用户决定使用React开发前端",
+    type="decision",
+    importance=0.9
+)
 ```
 
-### 3. 搜索记忆
+### Step 3: 搜索记忆
 
 ```python
-# RRF智能搜索（推荐）
-results = db.search_rrf("用户叫什么名字", limit=5)
+from claw_memory import memory_search_rrf
 
-# 基本搜索
-results = db.search("张三")
+# RRF融合搜索
+results = memory_search_rrf(
+    query="用户的工作是什么",
+    limit=5
+)
+
+for r in results:
+    print(f"{r['content']} (score: {r['score']:.3f})")
 ```
 
-### 4. 查看统计
+### Step 4: 查看统计
 
 ```python
-stats = db.stats()
+from claw_memory import memory_stats
+
+stats = memory_stats()
 print(f"总记忆数: {stats['total_memories']}")
+print(f"记忆类型分布: {stats['by_type']}")
 ```
 
-## 意图搜索示例
+## 📝 常用命令
 
-系统能自动理解不同类型的查询：
+### 存储记忆
 
-```python
-# 否定查询
-results = db.search_rrf("用户不喜欢什么食物")
-
-# 时序查询
-results = db.search_rrf("用户最近在做什么项目")
-
-# 多跳推理
-results = db.search_rrf("用户朋友喜欢什么")
-
-# 模糊查询
-results = db.search_rrf("用户的hangzhou联系方式")
+```
+memory_store content="内容" type="fact|preference|decision|lesson" importance=0.5-1.0
 ```
 
-## 遗忘机制
+### 搜索记忆
 
-记忆会自动基于时间和重要性衰减：
-
-```python
-# 查看遗忘曲线
-from claw_memory import memory_forgetting
-curves = memory_forgetting("decay_curve")
+```
+memory_search query="查询内容" limit=10
+memory_search_rrf query="查询内容" k=60
 ```
 
-## 自动备份
+### 知识图谱
 
-```python
-from claw_memory import start_auto_backup
-
-# 每天自动备份
-scheduler = start_auto_backup(interval_hours=24)
+```
+memory_kg action="search|network|stats" entity="实体名" depth=2
 ```
 
-## 用户画像
+### 层级管理
 
-```python
-from claw_memory import build_user_profile
-
-# 获取用户所有记忆
-memories = db.get_all()
-profile = build_user_profile(memories)
-
-print(f"用户兴趣: {profile.interests}")
-print(f"技能: {profile.skills}")
+```
+memory_tier action="stats|auto_tier"
 ```
 
-## 常见问题
+### 时序提取
 
-### Q: 搜索结果不准确？
-A: 尝试提高 importance 值（0.7-1.0），重要记忆会被优先召回
+```
+memory_temporal_extract text="用户上周感冒了"
+```
 
-### Q: 如何加速搜索？
-A: 系统已使用并行通道搜索，延迟约1秒。如需更快可减少 limit
+## 🏠 多部署方案选择
 
-### Q: 记忆安全吗？
-A: 支持 E2E 加密，密钥仅本地存储
+### 方案D: 完全本地（推荐）
 
-## 完整API
+适合：隐私优先、追求完全控制
 
-见 [API_REFERENCE.md](API_REFERENCE.md)
+```bash
+ollama pull bge-m3
+ollama pull qwen3.5:27b
+```
+
+内存需求：~22GB
+
+### 方案C: 简单用（OpenAI）
+
+适合：仅有OpenAI API
+
+```bash
+export OPENAI_API_KEY="sk-xxx"
+```
+
+### 方案B: 预算有限
+
+适合：需要重排但想省钱
+
+```bash
+export JINA_API_KEY="xxx"
+export SILICONFLOW_API_KEY="xxx"
+export OPENAI_API_KEY="xxx"
+```
+
+### 方案A: 全功能
+
+适合：追求最高质量
+
+```bash
+export JINA_API_KEY="xxx"
+export OPENAI_API_KEY="xxx"
+```
+
+## 🔧 常见问题
+
+### Q: 向量模型用什么？
+
+**推荐**: `bge-m3` - 通用嵌入模型，精度高
+
+**可选**: `mxbai-embed-large` - 更轻量，速度快
+
+### Q: LLM模型用什么？
+
+**推荐**: `qwen3.5:27b` - 中文理解强，精度高
+
+**可选**: `qwen3:8b` - 更轻量，速度快
+
+### Q: Cross-Encoder是必须的吗？
+
+**否**。Cross-Encoder用于提升搜索精度，但不是必须的。系统在没有Cross-Encoder时也能正常工作。
+
+### Q: 如何选择部署方案？
+
+| 场景 | 推荐方案 |
+|------|---------|
+| 隐私优先 | D (完全本地) |
+| 仅有OpenAI | C (简单用) |
+| 预算有限 | B (免费重排) |
+| 追求质量 | A (全功能) |
+
+## 📊 性能参考
+
+| 操作 | 方案D本地 | 方案C云端 |
+|------|----------|----------|
+| 存储 | ~50ms/条 | ~100ms/条 |
+| 搜索 | ~100ms | ~200ms |
+| 嵌入生成 | ~200ms | ~50ms |
+
+## 🧪 验证安装
+
+```bash
+# 运行测试
+pytest
+
+# 查看统计
+python -c "from claw_memory import memory_stats; print(memory_stats())"
+```
+
+## 下一步
+
+- 阅读 [API_REFERENCE.md](API_REFERENCE.md) 了解更多API
+- 阅读 [SKILL.md](SKILL.md) 了解完整功能
+- 阅读 [README.md](README.md) 了解架构设计

@@ -1,342 +1,77 @@
-# CLAW MEMORY - 小爪记忆系统
+# Claw Memory - OpenClaw 记忆系统技能
 
-> 本地优先的 AI 记忆系统 · 零 API 成本 · 混合触发 · 自动生命周期管理
+> 本地优先的AI记忆系统，支持多通道RRF检索、知识图谱、时序追踪
 
-## 核心理念
+## 🎯 技能简介
 
-1. **本地优先** — 全部使用 Ollama (bge-m3 + qwen3.5)，零 API 成本
-2. **宁缺毋滥** — 质量 > 数量，激进修剪
-3. **真实第一** — Transcript-first，防止记忆幻觉
-4. **自动运转** — 不需要人工维护
-5. **可追溯** — 所有记忆有来源，能回查原始对话
+Claw Memory 是一个为 OpenClaw AI Agent 设计的长期记忆系统，具有以下核心能力：
 
-## 架构概览
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                     捕获层 (CAPTURE)                          │
-│  用户消息 → 规则过滤 → 实时抽取 → 深度抽取(会话结束)           │
-│    ↓                                                         │
-│  type: fact | preference | decision | lesson | entity         │
-└──────────────────────────────────────────────────────────────┘
-                              ↓
-┌──────────────────────────────────────────────────────────────┐
-│                     存储层 (STORAGE)                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐                 │
-│  │  HOT RAM │→│ WARM     │→│  COLD    │                 │
-│  │ SESSION- │  │ LanceDB  │  │ Markdown │                 │
-│  │ STATE.md │  │ Vectors  │  │ Archive  │                 │
-│  └──────────┘  └──────────┘  └──────────┘                 │
-└──────────────────────────────────────────────────────────────┘
-                              ↓
-┌──────────────────────────────────────────────────────────────┐
-│                     检索层 (RETRIEVAL)                        │
-│  混合检索(Vector+BM25) → 重排 → 过滤 → 返回                  │
-└──────────────────────────────────────────────────────────────┘
-```
-
-## 触发规则
-
-### 何时存储
-
-| 信号 | 示例 | 行为 |
+| 能力 | 描述 | 状态 |
 |------|------|------|
-| 用户给出事实 | "我住在上海" | 立即存 fact |
-| 用户给出偏好 | "我喜欢用 Tailwind" | 立即存 preference |
-| 用户做出决策 | "我们决定用 React" | 立即存 decision |
-| 用户纠正 AI | "不是这样的，应该是..." | 立即存 + 更新 |
-| 用户设置截止 | "截止日期是周五" | 立即存 task_state |
-| 任务完成 | 项目/子任务完成 | 会话结束时深度抽取 |
+| **意图分类** | 15种意图类型 | ✅ |
+| **5通道RRF检索** | Vector+BM25+Importance+KG+Temporal | ✅ |
+| **3跳推理** | 知识图谱多跳关系查询 | ✅ |
+| **自动提取** | Mem0风格，本地运行 | ✅ |
+| **4-Tier分层** | HOT/WARM/COLD/ARCHIVED | ✅ |
+| **多部署方案** | 本地/云端/混合 | ✅ |
+| **Cross-Encoder** | HuggingFace本地重排 | ✅ |
+| **时序提取** | 30+种时间表达式 | ✅ |
 
-### 何时跳过存储
-
-- 问候语（"你好"、"嗨"）
-- 简单确认（"好的"、"是的"）
-- 纯 emoji 消息
-- 闲聊（无信息量）
-
-### 何时召回
-
-- Session start（自动）
-- 用户提问且需要上下文（自动）
-- 处理新任务时（自动）
-
-## 工具接口
-
-### memory_store
-
-存储新记忆（自动触发）
-
-```python
-memory_store(
-    content="用户偏好 Tailwind 而不是 vanilla CSS",
-    type="preference",
-    importance=0.9,
-    tags=["frontend", "css"],
-    scope="user"  # 范围: global|user|project|agent|session|channel
-)
-```
-
-### memory_search
-
-语义搜索记忆（支持Cross-Encoder重排和多范围隔离）
-
-```python
-memory_search(
-    query="用户对前端框架的偏好",
-    limit=5,
-    types=["preference", "decision"],
-    min_score=0.3,           # 最低重要性分数
-    scope="user",             # 范围过滤: global|user|project|agent|session|channel
-    use_rerank=True          # 是否使用Cross-Encoder重排
-)
-```
-
-### memory_recall
-
-召回相关记忆（自动注入上下文）
-
-```python
-memory_recall(
-    query="项目状态",
-    auto_inject=True,  # 自动注入到上下文
-    similarity_threshold=0.6  # 最低相似度阈值
-)
-```
-
-### memory_forget
-
-删除记忆
-
-```python
-memory_forget(
-    query="错误的记忆内容"  # 或 memory_id="xxx"
-)
-```
-
-### memory_tier
-
-查看或管理层级
-
-```python
-memory_tier(action="view", tier="ALL")  # view|stats|auto_tier
-```
-
-### memory_stats
-
-统计数据
-
-```python
-memory_stats()  # 返回数量、大小、最近活动等
-```
-
-## 数据结构
-
-```typescript
-interface Memory {
-  id: string;              // UUID
-  type: 'fact' | 'preference' | 'decision' | 'lesson' | 'entity' | 'task_state';
-  content: string;        // 原始内容
-  summary?: string;       // 摘要（COLD降级时生成）
-  importance: number;     // 0.0-1.0
-  source: string;         // 原始消息ID
-  transcript?: string;    // 原始对话片段
-  
-  tags: string[];
-  scope: 'global' | 'user' | 'project' | 'agent' | 'session' | 'channel';  // 【增强】多范围隔离
-  scope_id?: string;
-  
-  created_at: string;     // ISO 8601
-  updated_at: string;
-  last_accessed?: string;
-  access_count: number;
-  
-  // 演进链
-  revision_chain?: string[];
-  superseded_by?: string;
-}
-```
-
-## 新增功能 (v1.5)
-
-### P3性能优化 - 缓存层
-
-**搜索结果缓存** - LRU + TTL：
-```python
-memory_cache(action='stats')  # 查看缓存状态
-memory_cache(action='clear')  # 清空缓存
-```
-
-**带缓存的搜索**：
-```python
-db.search_cached(query, limit=5)      # 带缓存的向量搜索
-db.search_rrf_cached(query, limit=5) # 带缓存的RRF搜索
-```
-
-### P2时序追踪 - 记忆版本管理
-
-**时间范围追踪**：
-- `valid_from`: 记忆创建时间
-- `valid_until`: 记忆失效时间
-- `superseded_by`: 被哪个记忆替代
-
-**API**：
-```python
-memory_temporal(action='history', memory_id='xxx')  # 获取版本历史
-memory_temporal(action='as_of')                     # 查询当前有效记忆
-memory_temporal(action='changes', days=7)         # 最近变更
-memory_temporal(action='timeline')                 # 偏好时间线
-memory_temporal(action='prune')                     # 清理过期历史
-```
-
-### P1实体消歧
-
-**LLM驱动的实体消歧** - 判断实体是否已存在并自动合并：
-
-| 功能 | 说明 |
-|-----|------|
-| 精确匹配 | 完全相同的实体名 |
-| 子串匹配 | "清华大学"和"清华" |
-| LLM判断 | 语义相似性判断 |
-
-```python
-memory_disambiguate(
-    entity_name="Shopify",
-    entity_type="company",
-    context="用户在这家公司工作"
-)
-```
-
-**返回结果**：
-- `merged`: 合并到已存在实体
-- `existing`: 已存在（精确匹配）
-- `new`: 新建实体
-
-### RRF融合搜索 (P0优化)
-
-**LLM驱动的实体消歧** - 判断实体是否已存在并自动合并：
-
-| 功能 | 说明 |
-|-----|------|
-| 精确匹配 | 完全相同的实体名 |
-| 子串匹配 | "清华大学"和"清华" |
-| LLM判断 | 语义相似性判断 |
-
-```python
-memory_disambiguate(
-    entity_name="Shopify",
-    entity_type="company",
-    context="用户在这家公司工作"
-)
-```
-
-**返回结果**：
-- `merged`: 合并到已存在实体
-- `existing`: 已存在（精确匹配）
-- `new`: 新建实体
-
-### RRF融合搜索 (P0优化)
-
-**4通道RRF融合** - Reciprocal Rank Fusion，综合多个搜索通道的结果：
-
-| 通道 | 说明 | 权重 |
-|-----|------|------|
-| Vector | 语义向量相似度 | 0.3 |
-| BM25 | 关键词匹配 | 0.25 |
-| Importance | 重要性分数 | 0.25 |
-| KG | 知识图谱关联 | 0.2 |
-
-**使用方式**：
-```python
-memory_search_rrf(
-    query="用户偏好",
-    limit=5,
-    k=60  # RRF参数，越小越激进
-)
-```
-
-### Cross-Encoder 重排
-
-使用 qwen3.5 对向量搜索结果进行二次精排，提升相关性：
-
-```python
-memory_search(
-    query="用户偏好",
-    use_rerank=True  # 启用Cross-Encoder重排
-)
-```
-
-**原理**：
-- 向量搜索：快速召回候选集
-- Cross-Encoder：对每个候选计算 query-content 相关性分数
-- 综合评分 = 向量相似度×0.3 + Cross-Encoder×0.7
-
-### 多范围隔离
-
-支持细粒度的数据隔离：
-
-| Scope | 说明 |
-|-------|------|
-| global | 全局共享记忆 |
-| user | 用户级记忆 |
-| project | 项目级记忆 |
-| agent | Agent专属记忆 |
-| session | 当前会话记忆 |
-| channel | 频道/群组记忆 |
-
-```python
-# 存储到指定范围
-memory_store(content="项目配置", scope="project")
-
-# 只搜索指定范围
-memory_search(query="配置", scope="project")
-
-# 只召回指定范围
-memory_recall(query="配置", scope="agent")
-```
-
-## 生命周期
+## 🏗️ 系统架构
 
 ```
-会话进行中 ─────────────────────────────────────────────────
-                    ↓
-              实时抽取（高置信度）
-                    ↓
-会话结束 ─────────────────────────────────────────────────
-                    ↓
-              深度抽取（qwen3.5）
-                    ↓
-    ┌─────────────┼─────────────┐
-    ↓             ↓             ↓
-  HOT→WARM     WARM→COLD    清理
-  (24h后)      (30天后)     (<0.3删除)
+┌─────────────────────────────────────────────────────────────┐
+│                      CAPTURE (输入)                         │
+│                                                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ 规则提取     │→│ 实时提取    │→│ 深度提取    │→│ 自动提取  │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└────────────────────────────┬──────────────────────────────┘
+                             │
+┌────────────────────────────▼──────────────────────────────┐
+│                      STORE (存储)                            │
+│                                                              │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
+│  │   HOT   │→│  WARM   │→│  COLD   │→│ARCHIVED│        │
+│  │会话级    │  │向量级    │  │永久级    │  │归档级    │        │
+│  │>0.9 imp │  │>0.7 imp │  │>0.5 imp │  │≤0.5 imp │        │
+│  └─────────┘  └─────────┘  └─────────┘  └─────────┘        │
+└────────────────────────────┬──────────────────────────────┘
+                             │
+┌────────────────────────────▼──────────────────────────────┐
+│                    RETRIEVE (检索)                           │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              RRF 5通道融合                            │   │
+│  │  Vector(向量) + BM25(关键词) + Importance(重要性)   │   │
+│  │  + KG(图谱) + Temporal(时序)                        │   │
+│  └─────────────────────────────────────────────────────┘   │
+└────────────────────────────┬──────────────────────────────┘
+                             │
+┌────────────────────────────▼──────────────────────────────┐
+│                    RERANK (重排)                            │
+│                                                              │
+│  Cross-Encoder (HuggingFace本地)                           │
+│  ms-marco-MiniLM-L-6-v2 (~90MB)                          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## 文件结构
+## 🚀 快速开始
 
-```
-claw-memory/
-├── SKILL.md              # 本文档
-├── skill.yaml            # 元数据
-├── README.md             # 快速开始
-├── memory_main.py        # 入口 + CLI
-├── memory_config.py      # 配置
-├── memory_extract.py     # 抽取（规则 + LLM）
-├── memory_session.py     # HOT层 (SESSION-STATE.md)
-├── memory_tier.py       # 层级管理 + TTL晋升
-├── lancedb_store.py      # WARM层 (LanceDB)
-└── ollama_embed.py       # Ollama嵌入
-```
-
-## 安装依赖
+### 1. 安装依赖
 
 ```bash
-pip install lancedb pyarrow requests numpy
+# 本地模式（推荐）
+ollama pull bge-m3
+ollama pull qwen3.5:27b
+
+# 可选：Cross-Encoder（提升精度）
+# 自动下载，无需手动安装
 ```
 
-## 配置项
+### 2. 配置 OpenClaw
 
-在 `~/.openclaw/openclaw.json` 中：
+在 `openclaw.json` 中添加：
 
 ```json
 {
@@ -345,12 +80,6 @@ pip install lancedb pyarrow requests numpy
       "claw-memory": {
         "enabled": true,
         "config": {
-          "hot_ttl_hours": 24,
-          "warm_ttl_days": 30,
-          "min_importance": 0.3,
-          "auto_recall": true,
-          "auto_capture": true,
-          "ollama_url": "http://localhost:11434",
           "embed_model": "bge-m3:latest",
           "llm_model": "qwen3.5:27b"
         }
@@ -360,142 +89,162 @@ pip install lancedb pyarrow requests numpy
 }
 ```
 
-## CLI 用法
+### 3. 使用技能
+
+```
+@bot memory_store 内容="用户的名字叫张三" 类型="fact" 重要性=0.9
+@bot memory_search 查询="用户名字"
+@bot memory_stats
+```
+
+## 📦 工具列表
+
+### 存储工具
+
+| 工具 | 描述 |
+|------|------|
+| `memory_store` | 存储新记忆 |
+| `memory_recall` | 召回相关记忆 |
+
+### 检索工具
+
+| 工具 | 描述 |
+|------|------|
+| `memory_search` | 搜索记忆（支持重排） |
+| `memory_search_rrf` | RRF融合搜索 |
+| `memory_kg` | 知识图谱查询 |
+
+### 管理工具
+
+| 工具 | 描述 |
+|------|------|
+| `memory_forget` | 删除记忆 |
+| `memory_stats` | 获取统计 |
+| `memory_tier` | 层级管理 |
+| `memory_temporal` | 时序追踪 |
+
+### 提取工具
+
+| 工具 | 描述 |
+|------|------|
+| `memory_extract_session` | 会话记忆提取 |
+| `memory_auto_extract` | 自动事实提取 |
+| `memory_temporal_extract` | 时序信息提取 |
+
+## 📊 记忆类型
+
+| 类型 | 描述 | 示例 |
+|------|------|------|
+| `fact` | 事实信息 | "用户的名字叫张三" |
+| `preference` | 用户偏好 | "用户喜欢川菜" |
+| `decision` | 决策记录 | "用户选择使用React" |
+| `lesson` | 经验教训 | "用户从错误中学到..." |
+| `entity` | 实体信息 | "用户的朋友小李" |
+| `task_state` | 任务状态 | "用户的项目完成80%" |
+
+## 🎯 意图分类
+
+系统支持15种意图类型：
+
+| 意图 | 示例查询 |
+|------|---------|
+| `fact` | "用户的工作是什么" |
+| `preference` | "用户喜欢什么" |
+| `negation` | "用户不喜欢吃什么" |
+| `temporal` | "用户最近在做什么" |
+| `multihop` | "用户朋友的朋友是谁" |
+| `habit` | "用户的习惯是什么" |
+| `skill` | "用户擅长什么" |
+| `goal` | "用户的目标是什么" |
+| `health` | "用户的健康如何" |
+| `work` | "用户的职业是什么" |
+
+## 🏠 多部署方案
+
+### 方案对比
+
+| 方案 | Embedding | Reranker | LLM | 适用场景 |
+|------|-----------|----------|-----|---------|
+| **A** | Jina API | Jina | GPT-4o | 生产环境 |
+| **B** | Jina API | SiliconFlow | GPT-4o | 预算有限 |
+| **C** | OpenAI | ❌ | GPT-4o | 简单使用 |
+| **D** | Ollama本地 | ❌ | Ollama本地 | 隐私优先 |
+
+### 方案D本地模型
+
+| 模型 | 大小 | 内存需求 | 说明 |
+|------|------|---------|------|
+| bge-m3 | 1.2GB | ~2GB | 默认嵌入模型 |
+| mxbai-embed-large | 670MB | ~1.5GB | 可选，更快 |
+| qwen3.5:27b | 17GB | ~20GB | 默认LLM |
+| qwen3:8b | 5GB | ~8GB | 可选，更快 |
+
+### 自动检测
+
+系统按以下优先级检测：
+
+```
+环境变量 MEMORY_SCHEME=A/B/C/D → 强制指定方案
+JINA + OPENAI → 方案A
+JINA + SILICONFLOW + OPENAI → 方案B
+OPENAI → 方案C
+无外部API → 方案D（默认）
+```
+
+## 🔧 分层存储
+
+| 层级 | 重要性 | 存储位置 | TTL |
+|------|--------|---------|-----|
+| HOT | > 0.9 | SESSION-STATE.md | 24h |
+| WARM | > 0.7 | LanceDB | 30d |
+| COLD | > 0.5 | MEMORY.md + Git | 365d |
+| ARCHIVED | ≤ 0.5 | 归档目录 | 90d |
+
+## 📁 文件结构
+
+```
+claw-memory/
+├── memory_main.py      # 主入口
+├── memory_config.py    # 配置
+├── lancedb_store.py   # 向量存储
+├── kg_networkx.py      # 知识图谱
+├── intent_classifier.py # 意图分类
+├── chinese_extract.py  # 中文提取
+├── temporal_extract.py # 时序提取
+├── auto_extract.py    # 自动提取
+├── memory_tier_manager.py # 分层管理
+├── cross_encoder_rerank.py # Cross-Encoder
+├── memory_config_multi.py # 多部署配置
+├── multi_embed.py      # 多嵌入provider
+├── multi_rerank.py    # 多重排provider
+└── tests/             # 测试
+```
+
+## 🧪 测试
 
 ```bash
-# 存储记忆
-python memory_main.py store "用户喜欢用 Tailwind CSS"
+# 运行所有测试
+pytest
 
-# 搜索记忆
-python memory_main.py search "用户的 CSS 偏好"
+# 运行基准测试
+python -m benchmark_suite
 
-# 召回记忆
-python memory_main.py recall "前端框架"
-
-# 查看层级
-python memory_main.py tier ALL
-
-# 统计
-python memory_main.py stats
-
-# 自动整理（建议定时执行）
-python memory_main.py auto_tier
+# 专业评审
+python professional_review.py
 ```
 
-## 依赖
+## 📚 相关文档
 
-- Ollama (bge-m3, qwen3.5)
-- LanceDB (pip install lancedb)
-- PyArrow (pip install pyarrow)
-- 本地存储 (Markdown文件)
+| 文档 | 内容 |
+|------|------|
+| [README.md](README.md) | 完整项目说明 |
+| [QUICKSTART.md](QUICKSTART.md) | 快速入门 |
+| [API_REFERENCE.md](API_REFERENCE.md) | API参考 |
 
-## 快速开始
+## 🤝 贡献
 
-1. 确保 Ollama 运行中：`ollama serve`
-2. 拉取模型：`ollama pull bge-m3:latest && ollama pull qwen3.5:27b`
-3. 安装依赖：`pip install lancedb pyarrow requests numpy`
-4. 重启 OpenClaw
+欢迎提交 Issue 和 PR！
 
-## 定时任务配置
+## 📄 许可证
 
-### 自动整理（建议每天执行）
-
-**方式1: 使用 cron**
-```bash
-# 每天凌晨2点自动整理
-crontab -e
-# 添加行：
-0 2 * * * /Users/claw/.openclaw/skills/claw-memory/scripts/auto_tier.sh >> /tmp/claw-memory-cron.log 2>&1
-```
-
-**方式2: OpenClaw cron（推荐）**
-在 `openclaw.json` 中配置 cron 任务：
-```json
-{
-  "crons": {
-    "memory-auto-tier": {
-      "command": "python /Users/claw/.openclaw/skills/claw-memory/memory_main.py auto_tier",
-      "schedule": "0 2 * * *"
-    }
-  }
-}
-```
-
-### 定时任务会执行：
-1. HOT → WARM 晋升（检查24h超时）
-2. WARM → COLD 归档（检查30天超时）
-3. 低重要性记忆自动清理
-
-## 版本历史
-
-- v1.0.0 (2026-03-31): 初始版本
-- v1.0.1 (2026-03-31): 修复 LanceDB schema 和 _update_access bug
-- v1.0.2 (2026-03-31): 修复 quick_extract 重复匹配，添加 cron 集成
-- v1.1.0 (2026-03-31): 新增 Cross-Encoder 重排、多范围隔离
-- v1.2.0 (2026-03-31): 新增知识图谱、自动实体关系关联、健康度仪表盘
-- v1.3.0 (2026-03-31): **P0** RRF融合搜索（4通道：Vector+BM25+Importance+KG）
-- v1.4.0 (2026-03-31): **P1** 实体消歧（LLM判断+自动合并）
-- v1.5.0 (2026-03-31): **P2** 时序追踪 + **P3** 性能优化（缓存层）
-- v1.6.0 (2026-03-31): 专业评审优化（Cross-Encoder替换、Benchmark、NetworkX图谱）
-- v1.7.0 (2026-03-31): 技术完善（Weibull遗忘、健康仪表盘）
-- **v1.8.0 (2026-03-31): P0问题修复**
-  - ✅ 修复全表内存加载（改用head()采样）
-  - ✅ 统一API响应格式（api_response辅助函数）
-  - ✅ 修复中文BM25分词
-  - ✅ Benchmark系统建立完成
-
-- **v1.9.0 (2026-03-31): P1问题修复**
-  - ✅ 创建requirements.txt依赖清单
-  - ✅ 创建memory_backup.py备份导出模块
-  - ✅ 添加_logger日志系统
-  - ✅ 替换print为标准日志
-
-- **v2.0.0 (2026-03-31): P2/P3功能完成**
-  - ✅ P2时序追踪完整API（history/as_of/timeline/changes/prune）
-  - ✅ P3搜索缓存（LRU+TTL+预取机制）
-  - ✅ 统一api_response响应格式
-  - ✅ 常见查询预取（16个预设查询）
-
-- **v2.1.0 (2026-03-31): 自适应RRF权重**
-  - ✅ AdaptiveRRF权重管理器
-  - ✅ 基于用户点击反馈自动调整通道权重
-  - ✅ memory_adaptive API（weights/click/stats/reset）
-  - ✅ 加权RRF融合公式
-
-- **v2.2.0 (2026-03-31): 隐私合规**
-  - ✅ AES加密敏感数据（transcript、content）
-  - ✅ GDPR数据导出（export）
-  - ✅ GDPR数据删除（delete/delete_all）
-  - ✅ 数据匿名化（anonymize）
-  - ✅ 隐私审计日志
-
-- **v2.3.0 (2026-03-31): 高级功能**
-  - ✅ 多向量提供者（Ollama/OpenAI/本地备用）
-  - ✅ 主备自动切换机制
-  - ✅ SimpleHash最后备用（始终可用）
-  - ✅ 传递推理（path路径查找）
-  - ✅ 共同邻居查询（common）
-  - ✅ 关系推理（infer）
-  - ✅ 多租户隔离（scope强制隔离）
-
-- **v2.5.0 (2026-03-31): Phase1优化**
-  - ✅ KG通道修复（集成find_path/infer_relations）
-  - ✅ Benchmark评测套件（12项测试）
-  - ✅ LOCOMO基准对标（MRR=0.542 vs 目标0.669）
-
-- **v2.6.0 (2026-03-31): Phase2 E2E加密**
-  - ✅ 端到端加密架构（零知识加密）
-  - ✅ AES-GCM级别加密
-  - ✅ 新记录自动加密存储
-  - ✅ 读取时自动解密
-
-- **v2.8.0 (2026-03-31): MRR突破0.792 ✅**
-  - ✅ Temporal通道5通道RRF融合
-  - ✅ 并行通道搜索（ThreadPoolExecutor）
-  - ✅ README扩展+Badges
-  - ✅ CHANGELOG.md
-  - ✅ MRR=0.792 > 目标0.669 🎯
-
-## 作者
-
-小爪 (Claw Memory System)
+MIT License
