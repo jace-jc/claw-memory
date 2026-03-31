@@ -4,39 +4,25 @@ Claw Memory - AI Memory System
 A local-first memory system with RRF search, knowledge graph, and temporal tracking.
 """
 
-__version__ = "2.7.1"
+__version__ = "2.8.0"
 
-# Core exports
-from .memory_main import get_db, get_db_store
+# Try relative imports first, fall back to absolute for testing
+try:
+    from .memory_main import get_db, get_db_store
+    from .memory_types import Memory, SearchResult, ApiResponse, MemoryType, Scope
+except ImportError:
+    # For testing when running pytest directly in the package directory
+    from memory_main import get_db, get_db_store
+    from memory_types import Memory, SearchResult, ApiResponse, MemoryType, Scope
 
-# Type exports
-from .memory_types import (
-    MemoryStoreRequest,
-    MemorySearchRequest,
-    MemoryRecallRequest,
-    MemoryForgetRequest,
-    MemoryStatsResponse,
-    MemoryHealthResponse,
-    MemoryType,
-)
-
-# Configuration
-from .memory_config import CONFIG
-
+# Convenience exports
 __all__ = [
-    # Core
     "get_db",
     "get_db_store",
-    # Types
-    "MemoryStoreRequest",
-    "MemorySearchRequest",
-    "MemoryRecallRequest",
-    "MemoryForgetRequest",
-    "MemoryStatsResponse",
-    "MemoryHealthResponse",
+    "Memory",
+    "SearchResult", 
+    "ApiResponse",
     "MemoryType",
-    # Config
-    "CONFIG",
-    # Version
+    "Scope",
     "__version__",
 ]
