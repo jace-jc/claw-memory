@@ -8,16 +8,23 @@ from enum import Enum
 
 class QueryIntent(str, Enum):
     """查询意图枚举"""
-    FACT = "fact"
-    PREFERENCE = "preference"
+    # 基础类型
+    FACT = "fact"  # 事实查询
+    PREFERENCE = "preference"  # 偏好查询
     NEGATION = "negation"  # 否定查询
-    TEMPORAL = "temporal"
-    ENTITY = "entity"
-    RELATION = "relation"
-    DECISION = "decision"
-    LESSON = "lesson"
+    TEMPORAL = "temporal"  # 时序查询
+    ENTITY = "entity"  # 实体查询
+    RELATION = "relation"  # 关系查询
+    DECISION = "decision"  # 决策查询
+    LESSON = "lesson"  # 经验教训
     FUZZY = "fuzzy"  # 模糊/拼写错误
     MULTIHOP = "multihop"  # 多跳推理
+    # 新增类型 (扩展到15种)
+    HABIT = "habit"  # 习惯查询
+    SKILL = "skill"  # 技能查询
+    GOAL = "goal"  # 目标查询
+    HEALTH = "health"  # 健康查询
+    WORK = "work"  # 工作查询
 
 class IntentClassifier:
     """意图分类器"""
@@ -75,6 +82,32 @@ class IntentClassifier:
         r"朋友的", r"同事的", r"老板的", r"家人的",
         r".+的.+的",  # X的Y的Z
         r"使用的技术",  # A使用的B
+    ]
+    
+    # 新增意图关键词
+    HABIT_WORDS = [
+        "习惯", "通常", "平时", "日常", "总是",
+        "经常", "往往", "一般会", "动不动"
+    ]
+    
+    SKILL_WORDS = [
+        "会", "擅长", "精通", "掌握", "熟悉",
+        "会用", "会做", "会写", "会说", "能力", "技能"
+    ]
+    
+    GOAL_WORDS = [
+        "目标", "计划", "想要", "希望", "打算",
+        "愿望", "志向", "梦想", "将要", "未来想"
+    ]
+    
+    HEALTH_WORDS = [
+        "健康", "身体", "体检", "医生", "病",
+        "过敏", "体质", "不舒服", "疼", "痛"
+    ]
+    
+    WORK_WORDS = [
+        "工作", "职位", "公司", "上班", "加班",
+        "下班", "同事", "领导", "老板", "项目"
     ]
     
     # 拼音-中文映射（常见）
@@ -189,7 +222,30 @@ class IntentClassifier:
         """基于关键词分类"""
         scores = {}
         
-        # FACT
+        # 优先级：更具体的意图优先
+        # 权重：具体意图2分，通用意图1分
+        
+        # HABIT (具体)
+        habit_score = sum(2 for w in self.HABIT_WORDS if w in query)
+        scores[QueryIntent.HABIT] = habit_score
+        
+        # SKILL (具体)
+        skill_score = sum(2 for w in self.SKILL_WORDS if w in query)
+        scores[QueryIntent.SKILL] = skill_score
+        
+        # GOAL (具体)
+        goal_score = sum(2 for w in self.GOAL_WORDS if w in query)
+        scores[QueryIntent.GOAL] = goal_score
+        
+        # HEALTH (具体)
+        health_score = sum(2 for w in self.HEALTH_WORDS if w in query)
+        scores[QueryIntent.HEALTH] = health_score
+        
+        # WORK (具体)
+        work_score = sum(2 for w in self.WORK_WORDS if w in query)
+        scores[QueryIntent.WORK] = work_score
+        
+        # FACT (通用意图，分数较低)
         fact_words = ["什么", "是谁", "在哪", "叫什么", "哪个"]
         scores[QueryIntent.FACT] = sum(1 for w in fact_words if w in query)
         
@@ -201,11 +257,17 @@ class IntentClassifier:
         entity_words = ["认识", "朋友", "同事", "使用", "工具"]
         scores[QueryIntent.ENTITY] = sum(1 for w in entity_words if w in query)
         
-        # 找最高分
+        # 找最高分（优先返回具体意图）
         if scores:
-            best = max(scores.items(), key=lambda x: x[1])
-            if best[1] > 0:
-                return best[0], 0.7
+            max_score = max(scores.values())
+            if max_score > 0:
+                # 找所有得最高分的意图
+                best_intents = [k for k, v in scores.items() if v == max_score]
+                # 优先返回具体意图
+                for intent in [QueryIntent.HABIT, QueryIntent.SKILL, QueryIntent.GOAL, 
+                               QueryIntent.HEALTH, QueryIntent.WORK, QueryIntent.FACT]:
+                    if intent in best_intents:
+                        return intent, 0.75
         
         return QueryIntent.FACT, 0.5
     
