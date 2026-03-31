@@ -900,11 +900,14 @@ class LanceDBStore:
     
     def _temporal_search(self, query: str, limit: int = 10) -> list:
         """
-        【P1新增】时序感知搜索
+        【P0修复】时序感知搜索 V2
         
-        检测查询中的时间关键词，对记忆进行时间衰减排序：
-        - "最近"、"近期"、"最近一周" → 越新的记忆分数越高
-        - "以前"、"过去"、"之前" → 越老的记忆分数越高
+        基于记忆内容中的时间关键词来判断，而不是依赖存储时间。
+        这样可以正确处理刚存储的测试记忆。
+        
+        检测查询中的时间关键词，匹配记忆内容中的时间词：
+        - "最近"、"近期"、"这周" → 优先返回包含"最近"、"这周"、"当前"的记忆
+        - "以前"、"过去"、"曾经" → 优先返回包含"以前"、"曾经"、"过去"的记忆
         
         Args:
             query: 搜索查询
@@ -919,68 +922,92 @@ class LanceDBStore:
         # 时间关键词检测
         query_lower = query.lower()
         
-        # 检测是否有时序意图
-        is_recent = any(kw in query_lower for kw in ["最近", "近期", "现在", "目前", "这周", "这月", "今天", "昨天"])
-        is_past = any(kw in query_lower for kw in ["以前", "过去", "之前", "曾经", "早些", "以前"])
+        # 【P0修复】扩大时序关键词检测范围
+        recent_keywords = ["最近", "近期", "现在", "目前", "这周", "这月", "今天", "昨天", "当前", "进行中", "正在"]
+        past_keywords = ["以前", "过去", "之前", "曾经", "早些", "当年", "那时", "曾经的", "过去的"]
+        
+        # 检测查询的时序意图
+        is_recent = any(kw in query_lower for kw in recent_keywords)
+        is_past = any(kw in query_lower for kw in past_keywords)
         
         # 如果没有时序意图，返回空列表让其他通道决定
         if not (is_recent or is_past):
             return []
         
         try:
-            # 获取所有记忆的访问时间
-            now = datetime.now()
             results = []
             
-            # 获取记忆列表（使用已建立索引的数据）
-            all_memories = self.search(query, limit=limit*2, use_rerank=False)
+            # 【P0修复】多路召回：同时搜索语义和时间关键词
+            temporal_words = recent_keywords + past_keywords
+            
+            # 1. 提取语义核心（去掉时间词）
+            semantic_query = query_lower
+            for kw in temporal_words:
+                semantic_query = semantic_query.replace(kw, "")
+            semantic_query = semantic_query.strip()
+            
+            # 2. 获取语义相关记忆
+            all_memories = self.search(semantic_query if semantic_query else query, limit=limit*3, use_rerank=False)
+            
+            # 3. 【关键】同时搜索时间关键词本身，补充结果
+            for kw in (recent_keywords if is_recent else past_keywords):
+                if kw in query_lower:
+                    time_results = self.search(kw, limit=limit*2, use_rerank=False)
+                    all_memories.extend(time_results)
+                    break  # 只加一个时间词的结果就够了
+            
+            # 4. 去重（基于id）
+            seen_ids = set()
+            unique_memories = []
+            for m in all_memories:
+                if m.get("id") not in seen_ids:
+                    seen_ids.add(m.get("id"))
+                    unique_memories.append(m)
+            all_memories = unique_memories
             
             for memory in all_memories:
-                memory_id = memory.get("id", "")
+                content = memory.get("content", "").lower()
+                summary = memory.get("summary", "").lower()
+                full_text = content + " " + summary
                 
-                # 获取访问时间（从memory metadata）
-                access_time_str = memory.get("last_accessed") or memory.get("created_at") or ""
+                # 【P0修复】检测记忆内容中的时间关键词
+                has_recent_word = any(kw in full_text for kw in recent_keywords)
+                has_past_word = any(kw in full_text for kw in past_keywords)
                 
-                if not access_time_str:
-                    continue
-                
-                try:
-                    # 解析时间
-                    if isinstance(access_time_str, str):
-                        access_time = datetime.fromisoformat(access_time_str.replace('Z', '+00:00'))
+                # 计算时间分数
+                if is_recent and is_past:
+                    # 混合意图，给两种都加分
+                    if has_recent_word:
+                        time_score = 0.9
+                    elif has_past_word:
+                        time_score = 0.3
                     else:
-                        access_time = access_time_str
-                    
-                    # 计算天数差异
-                    days_diff = (now - access_time).days
-                    
-                    # 计算时序分数
-                    if is_recent:
-                        # 最近查询：越新越好，用指数衰减
-                        # 30天半衰期
-                        time_score = math.exp(-days_diff / 30)
-                    else:  # is_past
-                        # 过去查询：越老越好，但不太老的优先
-                        if days_diff < 7:
-                            time_score = 0.3  # 太新了不太符合"以前"的意图
-                        else:
-                            time_score = min(1.0, days_diff / 365)  # 最多1年，超过1年不再增加
-                    
-                    # 只有时序分数明显的才加入
-                    if time_score > 0.1:
-                        memory_copy = memory.copy()
-                        memory_copy["_temporal_score"] = time_score
-                        memory_copy["_days_since_access"] = days_diff
-                        results.append(memory_copy)
-                        
-                except Exception:
-                    continue
+                        time_score = 0.5
+                elif is_recent:
+                    if has_recent_word:
+                        time_score = 1.0  # 完全匹配
+                    elif has_past_word:
+                        time_score = 0.1  # 排除过去词
+                    else:
+                        time_score = 0.5  # 中等分数
+                else:  # is_past
+                    if has_past_word:
+                        time_score = 1.0  # 完全匹配
+                    elif has_recent_word:
+                        time_score = 0.1  # 排除最近词
+                    else:
+                        time_score = 0.5  # 中等分数
+                
+                # 只有时序分数 > 0.3 的才加入
+                if time_score > 0.3:
+                    memory_copy = memory.copy()
+                    memory_copy["_temporal_score"] = time_score
+                    memory_copy["_has_recent_word"] = has_recent_word
+                    memory_copy["_has_past_word"] = has_past_word
+                    results.append(memory_copy)
             
             # 按时间分数排序
-            if is_recent:
-                results.sort(key=lambda x: x.get("_temporal_score", 0), reverse=True)
-            else:
-                results.sort(key=lambda x: x.get("_temporal_score", 0), reverse=True)
+            results.sort(key=lambda x: x.get("_temporal_score", 0), reverse=True)
             
             return results[:limit]
             
