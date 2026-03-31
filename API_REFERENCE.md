@@ -1,12 +1,12 @@
 # Claw Memory API Reference
 
-> Version: 2.7.0  
+> Version: 2.8.0  
 > Last Updated: 2026-03-31
 
 ## Quick Start
 
 ```python
-from memory_main import get_db
+from claw_memory import get_db
 
 db = get_db()
 
@@ -221,7 +221,7 @@ CONFIG = {
 
 ### Store and Search
 ```python
-from memory_main import get_db
+from claw_memory import get_db
 
 db = get_db()
 
@@ -240,7 +240,7 @@ for r in results:
 
 ### Batch Operations
 ```python
-from memory_main import get_db
+from claw_memory import get_db
 
 db = get_db()
 
@@ -257,7 +257,7 @@ for mem in memories:
 
 ### Temporal Search
 ```python
-from memory_main import get_db
+from claw_memory import get_db
 
 db = get_db()
 

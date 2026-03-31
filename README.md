@@ -19,7 +19,7 @@
 
 | Metric | Claw Memory | Mem0 LOCOMO | Gap |
 |--------|-------------|-------------|-----|
-| **MRR** | 0.632 | 0.669 | -5.5% |
+| **MRR** | 0.792 | 0.669 | +18.4% ✅| |
 
 See [Benchmark Results](./benchmark_results/) for detailed analysis.
 
