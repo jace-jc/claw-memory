@@ -548,7 +548,7 @@ class LanceDBStore:
         except Exception:
             return []
     
-    def search_rrf(self, query: str, limit: int = 5, k: int = 60, use_adaptive: bool = True) -> list:
+    def search_rrf(self, query: str, limit: int = 5, k: int = 60, use_adaptive: bool = True, use_rerank: bool = None) -> list:
         """
         【新增】RRF融合搜索 - 5通道融合（支持自适应权重）
         
@@ -570,11 +570,19 @@ class LanceDBStore:
         """
         try:
             # 【P2新增】意图分类 + 查询扩展
+            # 【P0修复】根据意图自动决定是否启用Cross-Encoder
+            intent_to_rerank = {"multihop", "decision", "lesson", "negation"}
+            
+            intent = None  # 默认值
             try:
                 from intent_classifier import classify_query, expand_query, get_classifier
                 classifier = get_classifier()
                 intent, intent_confidence = classifier.classify(query)
                 expanded_queries = classifier.expand_query(query)
+                
+                # 【P0修复】自动启用Cross-Encoder for高难度查询
+                if use_rerank is None:
+                    use_rerank = intent.value in intent_to_rerank or intent_confidence > 0.8
                 
                 # 如果是特殊意图，使用意图专用权重
                 if intent_confidence > 0.75:
@@ -639,6 +647,7 @@ class LanceDBStore:
                     if unique_results:
                         return unique_results[:limit]
             except ImportError:
+                intent = None
                 pass
             
             # 获取自适应权重
@@ -702,17 +711,23 @@ class LanceDBStore:
             fused = self._rrf_fusion(all_channels, k=k, weights=weights)
             
             # 【P0修复】Cross-Encoder最终语义重排
-            # 条件：只有当RRF融合结果中top结果分数较低时才触发重排
-            # 避免过度重排影响原本正确的排序
-            if fused and len(fused) > 1:
+            # 条件：
+            # 1. use_rerank=True (手动启用)
+            # 2. use_rerank=None (auto): 高难度查询(negation/multihop/decision/lesson) 或 top_score < 0.5
+            # 3. use_rerank=False: 不重排
+            if fused and len(fused) > 1 and use_rerank is not False:
                 try:
                     top_score = fused[0].get("_final_score", 0) if fused else 0
-                    # 如果top结果分数已经较高(<0.7)，保持RRF结果，跳过重排
-                    # 只有在结果质量较差时才用Cross-Encoder二次确认
-                    if top_score < 0.5:
+                    
+                    # 自动判断是否需要重排
+                    high_intent = intent and intent.value in {"multihop", "decision", "lesson", "negation"}
+                    auto_rerank = high_intent or top_score < 0.5
+                    
+                    if use_rerank == True or (use_rerank is None and auto_rerank):
                         fused = self._rerank_cross_encoder(query, fused, limit)
+                        _logger.debug(f"Cross-Encoder rerank (intent={intent.value if intent else 'None'}, top_score={top_score:.3f})")
                     else:
-                        _logger.debug(f"RRF top score {top_score:.3f} >= 0.5, skipping rerank")
+                        _logger.debug(f"Skipping rerank (top_score={top_score:.3f})")
                 except Exception as e:
                     _logger.warning(f"Cross-Encoder rerank failed: {e}")
             
