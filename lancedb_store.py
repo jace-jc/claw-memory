@@ -396,13 +396,43 @@ class LanceDBStore:
             reverse=True
         )
         
+        # 【P0修复】过滤placeholder/test记忆
+        # 这些记忆没有实际内容但有高重要性分数
+        placeholder_patterns = [
+            "high importance", "importance上限", "测试重要性",
+            "test", "测试", "placeholder", "todo", "tmp"
+        ]
+        
+        def is_valid_memory(doc):
+            content = doc.get("content", "").lower()
+            summary = doc.get("summary", "").lower()
+            full_text = (content + " " + summary).strip()
+            
+            # 如果content太短或只是placeholder，降低优先级
+            if len(content) < 5:
+                return False
+            for pattern in placeholder_patterns:
+                if pattern.lower() in full_text and len(full_text) < 30:
+                    return False
+            return True
+        
         # 组装结果
         fused_results = []
+        valid_results = []
+        placeholder_results = []
+        
         for doc_id, rrf_score in sorted_docs:
             doc = doc_index[doc_id]
             doc["_rrf_score"] = round(rrf_score, 6)
             doc["_total_channels"] = len(doc["_channel_scores"])
-            fused_results.append(doc)
+            
+            if is_valid_memory(doc):
+                valid_results.append(doc)
+            else:
+                placeholder_results.append(doc)
+        
+        # 优先返回有效记忆，placeholder放最后
+        fused_results = valid_results + placeholder_results
         
         return fused_results
     
@@ -693,16 +723,31 @@ class LanceDBStore:
                     r["_temporal_score"] = r.get("_temporal_score", 0.5)
                 return results
             
-            # 并行执行所有通道
+            # 【P0修复】并行执行所有通道，使用字典保证结果对应正确
             with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-                futures = [
-                    executor.submit(_run_vector),
-                    executor.submit(_run_bm25),
-                    executor.submit(_run_importance),
-                    executor.submit(_run_kg),
-                    executor.submit(_run_temporal),
-                ]
-                vector_results, bm25_results, importance_results, kg_results, temporal_results = [f.result() for f in concurrent.futures.as_completed(futures)]
+                futures = {
+                    executor.submit(_run_vector): 'vector',
+                    executor.submit(_run_bm25): 'bm25',
+                    executor.submit(_run_importance): 'importance',
+                    executor.submit(_run_kg): 'kg',
+                    executor.submit(_run_temporal): 'temporal',
+                }
+                
+                # 收集结果（as_completed不保证顺序）
+                channel_results = {}
+                for future in concurrent.futures.as_completed(futures):
+                    channel_name = futures[future]
+                    try:
+                        channel_results[channel_name] = future.result()
+                    except Exception as e:
+                        _logger.warning(f"{channel_name} channel error: {e}")
+                        channel_results[channel_name] = []
+                
+                vector_results = channel_results.get('vector', [])
+                bm25_results = channel_results.get('bm25', [])
+                importance_results = channel_results.get('importance', [])
+                kg_results = channel_results.get('kg', [])
+                temporal_results = channel_results.get('temporal', [])
             
             # RRF融合 (5通道)
             all_channels = [v for v in [vector_results, bm25_results, importance_results, kg_results, temporal_results] if v]
