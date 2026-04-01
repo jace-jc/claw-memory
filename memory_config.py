@@ -7,7 +7,7 @@ from pathlib import Path
 
 # 安全修复：禁用E2E加密（原实现有安全漏洞）
 # 如需加密，建议使用操作系统级加密(FileVault/LUKS)或等待修复
-ENCRYPTION_ENABLED = False  # 默认禁用
+ENCRYPTION_ENABLED = True  # 默认禁用
 
 # 数据库路径
 DB_PATH = Path.home() / ".openclaw/workspace/memory/lancedb"
