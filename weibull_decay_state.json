@@ -1,0 +1,197 @@
+{
+  "memories": {
+    "bench_test_1774988226": {
+      "id": "bench_test_1774988226",
+      "initial_importance": 0.8,
+      "current_importance": 0.8999934078507275,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T04:17:06.906108",
+      "last_access": "2026-04-01T04:17:06.906284",
+      "next_decay_check": "2026-04-02T04:17:06.906284",
+      "decay_events": [],
+      "boost_events": [
+        {
+          "timestamp": "2026-04-01T04:17:06.906284",
+          "days_elapsed": 0.0,
+          "survival_before": 1.0,
+          "decayed_importance": 0.8,
+          "boost_applied": 0.1,
+          "new_importance": 0.9
+        }
+      ]
+    },
+    "verify_test_001": {
+      "id": "verify_test_001",
+      "initial_importance": 0.8,
+      "current_importance": 0.8999928335807669,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T04:17:33.803416",
+      "last_access": "2026-04-01T04:17:33.803624",
+      "next_decay_check": "2026-04-02T04:17:33.803624",
+      "decay_events": [],
+      "boost_events": [
+        {
+          "timestamp": "2026-04-01T04:17:33.803624",
+          "days_elapsed": 0.0,
+          "survival_before": 1.0,
+          "decayed_importance": 0.8,
+          "boost_applied": 0.1,
+          "new_importance": 0.9
+        }
+      ]
+    },
+    "bench_test_1774988284": {
+      "id": "bench_test_1774988284",
+      "initial_importance": 0.8,
+      "current_importance": 0.8999927139903742,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T04:18:04.131509",
+      "last_access": "2026-04-01T04:18:04.131724",
+      "next_decay_check": "2026-04-02T04:18:04.131724",
+      "decay_events": [],
+      "boost_events": [
+        {
+          "timestamp": "2026-04-01T04:18:04.131724",
+          "days_elapsed": 0.0,
+          "survival_before": 1.0,
+          "decayed_importance": 0.8,
+          "boost_applied": 0.1,
+          "new_importance": 0.9
+        }
+      ]
+    },
+    "test_final": {
+      "id": "test_final",
+      "initial_importance": 0.8,
+      "current_importance": 0.8,
+      "memory_type": "fact",
+      "access_count": 0,
+      "created_at": "2026-04-01T04:18:19.674986",
+      "last_access": "2026-04-01T04:18:19.674986",
+      "next_decay_check": "2026-04-02T04:18:19.674986",
+      "decay_events": [],
+      "boost_events": []
+    },
+    "bench_test_1775026134": {
+      "id": "bench_test_1775026134",
+      "initial_importance": 0.8,
+      "current_importance": 0.8999913504910009,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T14:48:54.029796",
+      "last_access": "2026-04-01T14:48:54.030099",
+      "next_decay_check": "2026-04-02T14:48:54.030099",
+      "decay_events": [],
+      "boost_events": [
+        {
+          "timestamp": "2026-04-01T14:48:54.030099",
+          "days_elapsed": 0.0,
+          "survival_before": 1.0,
+          "decayed_importance": 0.8,
+          "boost_applied": 0.1,
+          "new_importance": 0.9
+        }
+      ]
+    },
+    "bench_test_1775026301": {
+      "id": "bench_test_1775026301",
+      "initial_importance": 0.8,
+      "current_importance": 0.8999917598218969,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T14:51:41.787881",
+      "last_access": "2026-04-01T14:51:41.788156",
+      "next_decay_check": "2026-04-02T14:51:41.788156",
+      "decay_events": [],
+      "boost_events": [
+        {
+          "timestamp": "2026-04-01T14:51:41.788156",
+          "days_elapsed": 0.0,
+          "survival_before": 1.0,
+          "decayed_importance": 0.8,
+          "boost_applied": 0.1,
+          "new_importance": 0.9
+        }
+      ]
+    },
+    "bench_0.8_0": {
+      "id": "bench_0.8_0",
+      "initial_importance": 0.8,
+      "current_importance": 0.8,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T15:30:32.382275",
+      "last_access": "2026-04-01T15:30:32.382490",
+      "next_decay_check": "2026-04-02T15:30:32.382275",
+      "decay_events": [],
+      "boost_events": []
+    },
+    "bench_0.8_7": {
+      "id": "bench_0.8_7",
+      "initial_importance": 0.8,
+      "current_importance": 0.8,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T15:30:32.382508",
+      "last_access": "2026-03-25T15:30:32.382669",
+      "next_decay_check": "2026-04-02T15:30:32.382508",
+      "decay_events": [],
+      "boost_events": []
+    },
+    "bench_0.8_30": {
+      "id": "bench_0.8_30",
+      "initial_importance": 0.8,
+      "current_importance": 0.8,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T15:30:32.382680",
+      "last_access": "2026-03-02T15:30:32.382832",
+      "next_decay_check": "2026-04-02T15:30:32.382680",
+      "decay_events": [],
+      "boost_events": []
+    },
+    "bench_0.8_90": {
+      "id": "bench_0.8_90",
+      "initial_importance": 0.8,
+      "current_importance": 0.8,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T15:30:32.382842",
+      "last_access": "2026-01-01T15:30:32.383224",
+      "next_decay_check": "2026-04-02T15:30:32.382842",
+      "decay_events": [],
+      "boost_events": []
+    },
+    "bench_0.5_30": {
+      "id": "bench_0.5_30",
+      "initial_importance": 0.5,
+      "current_importance": 0.5,
+      "memory_type": "fact",
+      "access_count": 1,
+      "created_at": "2026-04-01T15:30:32.383233",
+      "last_access": "2026-03-02T15:30:32.383387",
+      "next_decay_check": "2026-04-02T15:30:32.383233",
+      "decay_events": [],
+      "boost_events": []
+    },
+    "bench_0.3_30": {
+      "id": "bench_0.3_30",
+      "initial_importance": 0.3,
+      "current_importance": 0.3,
+      "memory_type": "fact",
+      "access_count": 0,
+      "created_at": "2026-04-01T15:30:32.383396",
+      "last_access": "2026-04-01T15:30:32.383396",
+      "next_decay_check": "2026-04-02T15:30:32.383396",
+      "decay_events": [],
+      "boost_events": []
+    }
+  },
+  "stats": {
+    "total": 24,
+    "cold_storage": 0
+  }
+}

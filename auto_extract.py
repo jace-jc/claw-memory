@@ -180,6 +180,27 @@ class AutoExtractor:
                 seen.add(key)
                 unique_results.append(fact)
         
+        # 【v2.9 P0新增】去噪过滤：应用重要性阈值和置信度检查
+        try:
+            from denoise_filter import should_store_memory
+            
+            filtered_results = []
+            for fact in unique_results:
+                should_store, reason = should_store_memory(
+                    content=fact.content,
+                    importance=fact.confidence,  # 用置信度作为重要性参考
+                    confidence=fact.confidence,
+                    source=fact.source
+                )
+                if should_store:
+                    filtered_results.append(fact)
+                else:
+                    pass  # 被过滤的fact不加入结果
+            
+            unique_results = filtered_results
+        except ImportError:
+            pass  # 过滤器不可用，跳过
+        
         self.extraction_count += len(unique_results)
         self.last_extraction_time = datetime.now().isoformat()
         

@@ -19,6 +19,10 @@ import pyarrow as pa
 from memory_config import CONFIG
 from memory_config_multi import get_active_config
 
+from mmr_diversity import get_mmr_reranker
+from two_stage_dedup import TwoStageDedup, DedupDecision
+from wal_protocol import WALProtocol
+
 # 动态 schema（根据 embedding 维度自适应）
 def _build_schema(dimensions: int = None):
     """根据 embedding 维度动态构建 schema"""
@@ -95,6 +99,9 @@ class LanceDBStore:
         self._ensure_dir()
         self.db = self._connect()
         self.table = self._get_table()
+        self._dedup = TwoStageDedup(use_llm=False)
+        self._wal = WALProtocol(auto_load=True)
+        self._init_dedup()
     
     def _ensure_dir(self):
         Path(self.db_path).mkdir(parents=True, exist_ok=True)
@@ -149,6 +156,45 @@ class LanceDBStore:
             _logger.error(f"get_table error: {e}")
             return None
     
+    def _update_memory_content(self, memory_id: str, new_content: str) -> bool:
+        """更新已有记忆内容（用于MERGE）"""
+        if self.table is None:
+            return False
+        try:
+            # LanceDB不支持直接更新单行，使用删除+添加模拟
+            existing = self.table.search().where(f'id = "{memory_id}"').limit(1).to_arrow().to_pylist()
+            if not existing:
+                return False
+            record = existing[0]
+            record["content"] = new_content
+            record["updated_at"] = datetime.now().isoformat()
+            # 删除旧记录
+            self.table.delete(f'id = "{memory_id}"')
+            # 添加更新后的记录
+            self.table.add([record])
+            return True
+        except Exception as e:
+            _logger.warning(f"_update_memory_content failed: {e}")
+            return False
+    
+    def _init_dedup(self):
+        """初始化去重器，加载已有记忆"""
+        try:
+            from multi_embed import get_embedder
+            embedder = get_embedder()
+            self._dedup.set_embedder(embedder)
+            if self.table is not None:
+                try:
+                    # 加载已有记忆到去重器（最多500条，避免启动过慢）
+                    sample = self.table.head(500)
+                    if hasattr(sample, 'to_pylist'):
+                        memories = sample.to_pylist()
+                        self._dedup.load_memories(memories)
+                except Exception as e:
+                    _logger.debug(f"dedup init skipped: {e}")
+        except ImportError:
+            pass
+    
     def store(self, memory: dict) -> bool:
         """存储记忆"""
         # 【P0修复】确保已连接
@@ -170,6 +216,53 @@ class LanceDBStore:
             # 【边界修复】过滤 null bytes 和控制字符（保留可见字符+中文+emoji）
             import re
             content = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', content)
+            
+            # 【v2.9 P0新增】记忆质量过滤：去噪 + 阈值强制化
+            try:
+                from denoise_filter import should_store_memory, get_importance_threshold
+                
+                # 检查是否应该存储
+                importance_in = float(memory.get("importance", 0.5))
+                confidence_in = float(memory.get("confidence", 0.8))
+                source_in = memory.get("source", "")
+                
+                should_store, filter_reason = should_store_memory(
+                    content, importance_in, confidence_in, source_in
+                )
+                
+                if not should_store:
+                    _logger.info(f"[质量过滤] 拒绝存储: {filter_reason}")
+                    return False
+                
+                # 重要性阈值强制化
+                threshold = get_importance_threshold()
+                storage_tier = threshold.classify(importance_in)
+                
+                if storage_tier == "discard":
+                    _logger.info(f"[质量过滤] 重要性{importance_in:.2f}低于阈值，直接丢弃")
+                    return False
+                
+                # 标记存储层级
+                memory["_storage_tier"] = storage_tier
+                
+            except ImportError:
+                pass  # 过滤器不可用，跳过检查
+            
+            # 【v2.9 P0新增】recall防幻觉检查：如果内容刚被召回，则跳过存储
+            try:
+                from recall_guard import is_content_recalled, mark_content_recalled
+                
+                if is_content_recalled(content):
+                    _logger.info(f"[Recall Guard] 跳过已recall内容（防幻觉放大）: {content[:50]}...")
+                    return False
+                
+            except ImportError:
+                pass  # recall_guard不可用，跳过检查
+                
+                _logger.debug(f"[质量过滤] 通过 tier={storage_tier}")
+                
+            except ImportError:
+                pass  # 过滤器不可用，跳过检查
             
             # 【边界修复】clamp importance 到 [0.0, 1.0]
             importance = float(memory.get("importance", 0.5))
@@ -212,6 +305,22 @@ class LanceDBStore:
             
             # 准备数据
             now = datetime.now().isoformat()
+            
+            # 【v3.1 P0-B新增】Weibull衰减字段
+            try:
+                from weibull_decay import WeibullDecayModel
+                decay_model = WeibullDecayModel()
+                initial_decay_score = decay_model.get_current_importance(memory.get("id", ""))
+                if initial_decay_score is None:
+                    initial_decay_score = importance
+            except ImportError:
+                initial_decay_score = importance  # fallback
+            
+            # 【v3.1 P0-E新增】作用域隔离
+            scope = memory.get("scope", "global")
+            scope_id = memory.get("scope_id", "")
+            
+            # 构建record（根据实际schema添加字段）
             record = {
                 "id": memory.get("id", str(uuid.uuid4())),
                 "type": memory.get("type", "fact"),
@@ -221,8 +330,8 @@ class LanceDBStore:
                 "source": memory.get("source", ""),
                 "transcript": memory.get("transcript", ""),
                 "tags": json.dumps(memory.get("tags", [])),
-                "scope": memory.get("scope", "user"),
-                "scope_id": memory.get("scope_id", ""),
+                "scope": scope,
+                "scope_id": scope_id,
                 "vector": vector,
                 "created_at": memory.get("created_at", now),
                 "updated_at": now,
@@ -232,7 +341,76 @@ class LanceDBStore:
                 "superseded_by": memory.get("superseded_by", ""),
             }
             
+            # 【v3.1 P0-B/Fix】确保decay_score/decay_rate字段存在
+            try:
+                if self.table is not None:
+                    schema = self.table.schema
+                    field_names = [f.name for f in schema]
+                    
+                    # 如果缺少decay_score字段，添加到schema
+                    if "decay_score" not in field_names:
+                        self.table.add_columns([
+                            ("decay_score", "float"),
+                            ("decay_rate", "float")
+                        ])
+                        _logger.debug("[Weibull] 已添加decay_score/decay_rate字段")
+                    
+                    # 添加到record
+                    record["decay_score"] = initial_decay_score
+                    record["decay_rate"] = memory.get("decay_rate", 0.5)
+            except Exception as e:
+                _logger.debug(f"[Weibull] 字段添加跳过: {e}")
+            
+            # 【P2新增】两阶段去重检查
+            dedup_result = self._dedup.check(content, memory.get("type"))
+            if dedup_result.decision == DedupDecision.SKIP:
+                _logger.info(f"[TwoStageDedup] 跳过重复内容: {dedup_result.reason}")
+                return False
+            elif dedup_result.decision == DedupDecision.MERGE:
+                _logger.info(f"[TwoStageDedup] 合并到已有记忆: {dedup_result.matched_memory_id}")
+                # 记录合并到WAL
+                self._wal.add_decision(f"MERGE memory {record['id']} into {dedup_result.matched_memory_id}")
+                # 对于MERGE，更新已有记忆而非添加新记录
+                try:
+                    self._update_memory_content(dedup_result.matched_memory_id, content)
+                    return True
+                except Exception:
+                    pass  # 合并失败则继续创建
+            
+            # 【P2新增】WAL预写日志
+            try:
+                self._wal.set_current_task(f"store memory {record['id']}")
+                self._wal.update_context(f"Storing {memory.get('type', 'fact')}: {content[:100]}...")
+            except Exception:
+                pass
+            
             self.table.add([record])
+            
+            # 更新去重器内存
+            self._dedup.add_memory({"id": record["id"], "content": content})
+            
+            # 【v2.9 P0新增】存储后处理：矛盾检测 + 双缓冲注册
+            try:
+                from denoise_filter import check_contradiction, register_stored_memory
+                from recall_extraction_isolation import get_recall_extraction_isolation
+                
+                # 1. 矛盾检测
+                contradiction = check_contradiction(content, memory.get("type"))
+                if contradiction:
+                    _logger.info(f"[矛盾检测] 检测到矛盾: old={contradiction.get('old_memory',{}).get('content','')[:50]}...")
+                    # 矛盾处理：保留旧记忆，标记已更新，存储新记忆
+                    # （已在version_history中实现）
+                
+                # 2. 注册到矛盾检测器（用于后续矛盾检测）
+                register_stored_memory(memory)
+                
+                # 3. 注册到双缓冲提取池
+                isolation = get_recall_extraction_isolation()
+                isolation.store_with_isolation(memory)
+                
+            except ImportError:
+                pass
+            
             return True
         except Exception as e:
             _logger.error(f"store error: {e}")
@@ -255,6 +433,15 @@ class LanceDBStore:
         """
         if self.table is None:
             return []
+        
+        # 【v3.1 P0-D新增】自适应检索判断
+        try:
+            from adaptive_retrieval import should_retrieve, get_retrieval_reason
+            if not should_retrieve(query):
+                _logger.debug(f"[自适应检索] 跳过: {get_retrieval_reason(query)}")
+                return []
+        except ImportError:
+            pass  # 跳过自适应检查
         
         try:
             # 生成查询向量 - 使用 MultiEmbedder
@@ -301,6 +488,15 @@ class LanceDBStore:
                 
                 if len(filtered) >= (limit * 3 if use_rerank else limit):
                     break
+            
+            # 【v3.1 P0-B新增】Weibull衰减加权
+            try:
+                from weibull_decay import apply_decay_to_search_results
+                filtered = apply_decay_to_search_results(filtered)
+            except ImportError:
+                # 没有衰减引擎，使用原始分数
+                for r in filtered:
+                    r["_weighted_score"] = 1.0 - r.get("_distance", 0.5)
             
             # 【新增】重排：优先 MultiReranker（API方案A/B），回退到 Cross-Encoder（本地方案D）
             if use_rerank and filtered:
@@ -805,6 +1001,15 @@ class LanceDBStore:
             all_channels = [v for v in [vector_results, bm25_results, importance_results, kg_results, temporal_results] if v]
             
             fused = self._rrf_fusion(all_channels, k=k, weights=weights)
+            
+            # 【P2新增】MMR多样性重排（在RRF融合后、Cross-Encoder前）
+            if fused and len(fused) > 1:
+                try:
+                    mmr_reranker = get_mmr_reranker()
+                    fused = mmr_reranker.rerank(query, fused, limit=max(limit * 2, 10))
+                    _logger.debug(f"MMR rerank applied: {len(fused)} results")
+                except Exception as e:
+                    _logger.warning(f"MMR rerank failed: {e}")
             
             # 【P0修复】Cross-Encoder最终语义重排
             # 条件：

@@ -1,0 +1,46 @@
+[
+  {
+    "timestamp": "2026-04-01T04:17:14.980320",
+    "results": {
+      "Weibull\u8870\u51cf\u6a21\u578b": "FAIL",
+      "\u7248\u672c\u5386\u53f2\u7cfb\u7edf": "PASS",
+      "\u9644\u4ef6\u5b58\u50a8\u7cfb\u7edf": "PASS",
+      "\u5e76\u884c\u901a\u9053\u641c\u7d22": "PASS",
+      "Cross-Encoder\u91cd\u6392": "PASS",
+      "\u7aef\u5230\u7aefMRR\u6d4b\u8bd5": "PASS"
+    }
+  },
+  {
+    "timestamp": "2026-04-01T04:18:12.320930",
+    "results": {
+      "Weibull\u8870\u51cf\u6a21\u578b": "FAIL",
+      "\u7248\u672c\u5386\u53f2\u7cfb\u7edf": "PASS",
+      "\u9644\u4ef6\u5b58\u50a8\u7cfb\u7edf": "PASS",
+      "\u5e76\u884c\u901a\u9053\u641c\u7d22": "PASS",
+      "Cross-Encoder\u91cd\u6392": "PASS",
+      "\u7aef\u5230\u7aefMRR\u6d4b\u8bd5": "PASS"
+    }
+  },
+  {
+    "timestamp": "2026-04-01T14:49:04.132348",
+    "results": {
+      "Weibull\u8870\u51cf\u6a21\u578b": "FAIL",
+      "\u7248\u672c\u5386\u53f2\u7cfb\u7edf": "PASS",
+      "\u9644\u4ef6\u5b58\u50a8\u7cfb\u7edf": "PASS",
+      "\u5e76\u884c\u901a\u9053\u641c\u7d22": "PASS",
+      "Cross-Encoder\u91cd\u6392": "PASS",
+      "\u7aef\u5230\u7aefMRR\u6d4b\u8bd5": "PASS"
+    }
+  },
+  {
+    "timestamp": "2026-04-01T14:52:08.021944",
+    "results": {
+      "Weibull\u8870\u51cf\u6a21\u578b": "PASS",
+      "\u7248\u672c\u5386\u53f2\u7cfb\u7edf": "PASS",
+      "\u9644\u4ef6\u5b58\u50a8\u7cfb\u7edf": "PASS",
+      "\u5e76\u884c\u901a\u9053\u641c\u7d22": "FAIL",
+      "Cross-Encoder\u91cd\u6392": "PASS",
+      "\u7aef\u5230\u7aefMRR\u6d4b\u8bd5": "PASS"
+    }
+  }
+]
