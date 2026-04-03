@@ -259,7 +259,7 @@ def _kg_aware_search(self, query: str, limit: int) -> list:
     【P2优化】知识图谱感知搜索 - 支持稀疏图fallback
     """
     try:
-        from kg_networkx import get_kg_nx
+        from memory.kg_networkx import get_kg_nx
         
         kg = get_kg_nx()
         kg_results = []
@@ -515,7 +515,7 @@ def search_rrf(self, query: str, limit: int = 5, k: int = 60, use_adaptive: bool
         
         intent = None  # 默认值
         try:
-            from intent_classifier import classify_query, expand_query, get_classifier
+            from retrieval.intent_classifier import classify_query, expand_query, get_classifier
             classifier = get_classifier()
             intent, intent_confidence = classifier.classify(query)
             expanded_queries = classifier.expand_query(query)
@@ -665,7 +665,7 @@ def search_rrf(self, query: str, limit: int = 5, k: int = 60, use_adaptive: bool
         # 【P2新增】MMR多样性重排（在RRF融合后、Cross-Encoder前）
         if fused and len(fused) > 1:
             try:
-                from mmr_diversity import get_mmr_reranker
+                from retrieval.mmr_diversity import get_mmr_reranker
                 mmr_reranker = get_mmr_reranker()
                 fused = mmr_reranker.rerank(query, fused, limit=max(limit * 2, 10))
                 _logger.debug(f"MMR rerank applied: {len(fused)} results")
@@ -718,7 +718,7 @@ def search_rrf_cached(self, query: str, limit: int = 5, k: int = 60, use_cache: 
         return search_rrf(self, query, limit=limit, k=k)
     
     try:
-        from search_cache import get_search_cache
+        from retrieval.search_cache import get_search_cache
         cache = get_search_cache()
         
         # 尝试从缓存获取

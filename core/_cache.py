@@ -19,7 +19,7 @@ def search_cached(self, query: str, limit: int = 5, use_cache: bool = True, **kw
         return self.search(query, limit=limit, **kwargs)
     
     try:
-        from search_cache import get_search_cache
+        from retrieval.search_cache import get_search_cache
         cache = get_search_cache()
         
         # 尝试从缓存获取

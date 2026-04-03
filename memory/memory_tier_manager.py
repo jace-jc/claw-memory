@@ -26,8 +26,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List, Any, Tuple
 
-from memory_config import CONFIG
-from memory_session import session_state
+from core.memory_config import CONFIG
+from memory.memory_session import session_state
 
 # ==================== 层级定义 ====================
 
@@ -737,7 +737,7 @@ def auto_archive(threshold: float = 0.3) -> Dict[str, Any]:
 # ==================== 向后兼容 ====================
 
 # 保留旧的 tier_manager 实例用于向后兼容
-from memory_tier import tier_manager as old_tier_manager
+from memory.memory_tier import tier_manager as old_tier_manager
 
 # 如果旧管理器没有新的方法，添加兼容包装
 if not hasattr(old_tier_manager, 'get_tier'):

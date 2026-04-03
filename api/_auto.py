@@ -110,7 +110,7 @@ def memory_extract_session(messages: list) -> dict:
     """
     从会话消息中抽取记忆
     """
-    from memory_extract import extract_from_messages
+    from extract.memory_extract import extract_from_messages
     from memory_main import memory_store
     
     memories = extract_from_messages(messages)
@@ -191,7 +191,7 @@ def auto_capture(message: dict) -> list:
     自动捕获 - 从单条消息中快速抽取并存储
     返回已存储的记忆数量
     """
-    from memory_extract import is_noise, quick_extract
+    from extract.memory_extract import is_noise, quick_extract
     from memory_main import memory_store
     
     content = message.get("content", "")
@@ -222,7 +222,7 @@ def auto_recall(query: str, similarity_threshold: float = None) -> str:
     自动召回 - 搜索相关记忆并返回文本
     【P0修复】从CONFIG读取相似度阈值
     """
-    from memory_config import CONFIG
+    from core.memory_config import CONFIG
     from memory_main import memory_recall
     
     if similarity_threshold is None:

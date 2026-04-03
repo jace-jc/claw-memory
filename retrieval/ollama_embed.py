@@ -3,7 +3,7 @@ Ollama 嵌入模块 - 使用 bge-m3 生成向量
 """
 import requests
 import numpy as np
-from memory_config import CONFIG
+from core.memory_config import CONFIG
 
 class OllamaEmbedder:
     def __init__(self, model=None, url=None):

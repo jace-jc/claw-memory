@@ -76,7 +76,7 @@ class AutoBackupScheduler:
     
     def _perform_backup(self):
         """执行备份"""
-        from memory_backup import memory_backup, incremental_backup, auto_backup_schedule
+        from infra.memory_backup import memory_backup, incremental_backup, auto_backup_schedule
         
         try:
             print(f"[AutoBackup] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} 开始备份...")

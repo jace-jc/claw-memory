@@ -20,12 +20,12 @@ from pathlib import Path
 from typing import Optional, Union
 import lancedb
 import pyarrow as pa
-from memory_config import CONFIG
-from memory_config_multi import get_active_config
+from core.memory_config import CONFIG
+from core.memory_config_multi import get_active_config
 
-from mmr_diversity import get_mmr_reranker
-from two_stage_dedup import TwoStageDedup, DedupDecision
-from wal_protocol import WALProtocol
+from retrieval.mmr_diversity import get_mmr_reranker
+from retrieval.two_stage_dedup import TwoStageDedup, DedupDecision
+from infra.wal_protocol import WALProtocol
 
 # 配置日志 - 【P1修复】添加错误日志
 logging.basicConfig(
@@ -162,7 +162,7 @@ class LanceDBStore:
     def _init_dedup(self):
         """初始化去重器，加载已有记忆"""
         try:
-            from multi_embed import get_embedder
+            from retrieval.multi_embed import get_embedder
             embedder = get_embedder()
             self._dedup.set_embedder(embedder)
             if self.table is not None:

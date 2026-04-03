@@ -38,7 +38,7 @@ def test_weibull_decay():
     print_header("测试1: Weibull衰减模型")
     
     try:
-        from weibull_decay import (
+        from memory.weibull_decay import (
             get_weibull_model,
             register_memory,
             access_memory,
@@ -84,7 +84,7 @@ def test_version_history():
     print_header("测试2: 版本历史系统")
     
     try:
-        from version_history import (
+        from memory.version_history import (
             get_version_history,
             record_create,
             record_update,
@@ -139,7 +139,7 @@ def test_attachment_store():
     print_header("测试3: 附件存储系统")
     
     try:
-        from attachment_store import (
+        from infra.attachment_store import (
             get_attachment_store,
             add_attachment,
             get_memory_attachments
@@ -193,7 +193,7 @@ def test_parallel_search():
     print_header("测试4: 并行通道搜索")
     
     try:
-        from parallel_search import (
+        from retrieval.parallel_search import (
             get_parallel_searcher,
             benchmark_parallel_vs_serial
         )
@@ -243,7 +243,7 @@ def test_cross_encoder():
     print_header("测试5: Cross-Encoder重排")
     
     try:
-        from cross_encoder_rerank import get_reranker
+        from retrieval.cross_encoder_rerank import get_reranker
         
         reranker = get_reranker()
         available = reranker.is_available()

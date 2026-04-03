@@ -48,7 +48,7 @@ def memory_tier(action: str = "view", tier: str = "ALL") -> dict:
         get_tier_manager, TIER_HOT, TIER_WARM, TIER_COLD, TIER_ARCHIVED,
         get_tier, move_tier, get_tier_stats
     )
-    from memory_config import CONFIG
+    from core.memory_config import CONFIG
 
     if action == "stats":
         # 返回新旧两种统计
@@ -197,7 +197,7 @@ def memory_stats() -> dict:
     try:
         from memory_tier import tier_manager
         from memory_session import session_state
-        from memory_config import CONFIG
+        from core.memory_config import CONFIG
 
         db = get_db()
         warm_stats = db.stats()

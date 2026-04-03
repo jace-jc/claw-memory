@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from collections import defaultdict
-from memory_config import CONFIG
+from core.memory_config import CONFIG
 
 
 class MemoryHealth:
@@ -184,7 +184,7 @@ class MemoryHealth:
         【P2新增】分析记忆的遗忘情况
         """
         try:
-            from weibull_forgetting import get_weibull_decay
+            from memory.weibull_forgetting import get_weibull_decay
             
             decay = get_weibull_decay()
             

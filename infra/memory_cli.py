@@ -393,7 +393,7 @@ class MemoryCLI:
         print(bold("\n🔗 执行记忆去重\n"))
         
         try:
-            from data_unification import MemoryUnifier
+            from memory.data_unification import MemoryUnifier
             unifier = MemoryUnifier()
             report = unifier.unify()
             

@@ -14,7 +14,7 @@ def _rerank_cross_encoder(self, query: str, candidates: list, limit: int) -> lis
     替换原 qwen3.5 LLM方案，延迟从5-15秒降低到<10毫秒
     """
     try:
-        from cross_encoder_rerank import get_reranker
+        from retrieval.cross_encoder_rerank import get_reranker
         
         reranker = get_reranker()
         

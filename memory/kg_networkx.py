@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Set
 import networkx as nx
-from memory_config import CONFIG
+from core.memory_config import CONFIG
 
 
 class KnowledgeGraphNX:

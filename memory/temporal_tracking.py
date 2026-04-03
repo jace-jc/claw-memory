@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from pathlib import Path
-from memory_config import CONFIG
+from core.memory_config import CONFIG
 
 
 class TemporalMemory:

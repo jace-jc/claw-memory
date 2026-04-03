@@ -9,8 +9,8 @@ import json
 import uuid
 from datetime import datetime
 from typing import Optional, Any, Dict, List
-from memory_extract import extract_from_messages, is_noise, quick_extract, deep_extract
-from memory_config import CONFIG
+from extract.memory_extract import extract_from_messages, is_noise, quick_extract, deep_extract
+from core.memory_config import CONFIG
 
 
 def get_db():
@@ -55,7 +55,7 @@ def memory_store(
         scope: 范围 - global|user|project|agent|session|channel
     """
     # 【修复#3-1】噪音过滤：CLI调用也要检查
-    from memory_extract import is_noise
+    from extract.memory_extract import is_noise
     if is_noise(content):
         return {
             "success": False,

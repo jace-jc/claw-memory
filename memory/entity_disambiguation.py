@@ -6,7 +6,7 @@ import json
 import requests
 from typing import Optional, List, Dict, Tuple
 from collections import defaultdict
-from memory_config import CONFIG
+from core.memory_config import CONFIG
 
 
 class EntityDisambiguator:

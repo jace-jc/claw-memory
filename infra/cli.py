@@ -74,7 +74,7 @@ def cmd_health(args):
 
 def cmd_backup(args):
     """备份记忆"""
-    from memory_backup import memory_backup
+    from infra.memory_backup import memory_backup
     
     result = memory_backup(action="create")
     if result.get("success"):

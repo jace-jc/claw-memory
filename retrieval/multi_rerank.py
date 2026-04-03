@@ -24,7 +24,7 @@ class MultiReranker:
     
     def __init__(self, config: Dict[str, Any] = None):
         if config is None:
-            from memory_config_multi import get_active_config
+            from core.memory_config_multi import get_active_config
             cfg = get_active_config()
             config = cfg.get_reranker_config()
         

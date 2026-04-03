@@ -17,7 +17,7 @@ class MemoryHealthAPI:
     """
     
     def __init__(self):
-        from memory_config import CONFIG
+        from core.memory_config import CONFIG
         self.min_importance = CONFIG.get("min_importance", 0.3)
         self.warm_ttl_days = CONFIG.get("warm_ttl_days", 30)
         self.hot_ttl_hours = CONFIG.get("hot_ttl_hours", 24)

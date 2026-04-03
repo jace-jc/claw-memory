@@ -26,7 +26,7 @@ def search(self, query: str, limit: int = 5, types: list = None, min_score: floa
     
     # 【v3.1 P0-D新增】自适应检索判断
     try:
-        from adaptive_retrieval import should_retrieve, get_retrieval_reason
+        from retrieval.adaptive_retrieval import should_retrieve, get_retrieval_reason
         if not should_retrieve(query):
             _logger.debug(f"[自适应检索] 跳过: {get_retrieval_reason(query)}")
             return []
@@ -35,7 +35,7 @@ def search(self, query: str, limit: int = 5, types: list = None, min_score: floa
     
     try:
         # 生成查询向量 - 使用 MultiEmbedder
-        from multi_embed import get_embedder
+        from retrieval.multi_embed import get_embedder
         query_vector = get_embedder().embed(query)
         
         if not query_vector:

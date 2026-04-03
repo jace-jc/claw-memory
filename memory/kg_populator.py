@@ -8,9 +8,9 @@ KG填充工具 - 从已有记忆提取实体填充知识图谱
 """
 
 from typing import List, Dict, Set
-from kg_networkx import get_kg_nx
+from memory.kg_networkx import get_kg_nx
 from lancedb_store import LanceDBStore
-from chinese_extract import get_chinese_extractor
+from extract.chinese_extract import get_chinese_extractor
 
 
 def populate_kg_from_memories(limit: int = 100, dry_run: bool = False) -> Dict:

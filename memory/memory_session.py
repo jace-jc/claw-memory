@@ -8,7 +8,7 @@ import fcntl
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from memory_config import CONFIG
+from core.memory_config import CONFIG
 
 SESSION_STATE_TEMPLATE = """# SESSION-STATE.md — Active Working Memory
 

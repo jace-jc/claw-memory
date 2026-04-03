@@ -286,7 +286,7 @@ class ChineseEntityExtractor:
         
         try:
             import requests
-            from memory_config import CONFIG
+            from core.memory_config import CONFIG
             
             response = requests.post(
                 f"{CONFIG.get('ollama_url', 'http://localhost:11434')}/api/chat",

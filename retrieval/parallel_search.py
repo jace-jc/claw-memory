@@ -83,7 +83,7 @@ class ParallelChannelSearch:
     def _search_bm25(self, query: str, top_k: int) -> List[Dict]:
         """通道2: BM25关键词搜索"""
         try:
-            from bm25_search import get_bm25_search
+            from retrieval.bm25_search import get_bm25_search
             from lancedb_store import get_db_store
             
             # 获取记忆数据
@@ -140,7 +140,7 @@ class ParallelChannelSearch:
     def _search_kg(self, query: str, top_k: int) -> List[Dict]:
         """通道4: 知识图谱关联搜索"""
         try:
-            from kg_networkx import KnowledgeGraphNX
+            from memory.kg_networkx import KnowledgeGraphNX
             kg = KnowledgeGraphNX()
             
             # 提取查询中的实体
@@ -365,7 +365,7 @@ class ParallelChannelSearch:
         
         # 应用Weibull衰减
         try:
-            from weibull_decay import apply_decay_to_search_results
+            from memory.weibull_decay import apply_decay_to_search_results
             final_results = apply_decay_to_search_results(final_results)
         except ImportError:
             pass
@@ -389,7 +389,7 @@ class ParallelChannelSearch:
             return []
         
         try:
-            from cross_encoder_rerank import get_reranker
+            from retrieval.cross_encoder_rerank import get_reranker
             reranker = get_reranker()
             
             if reranker.is_available():
@@ -411,7 +411,7 @@ class ParallelChannelSearch:
             (results, stats, cache_hit)
         """
         try:
-            from search_cache import get_cache
+            from retrieval.search_cache import get_cache
             cache = get_cache()
             
             # 尝试从缓存获取

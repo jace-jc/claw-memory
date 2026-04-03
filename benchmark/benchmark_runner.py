@@ -28,10 +28,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lancedb_store import LanceDBStore
 from denoise_filter import should_store_memory
-from adaptive_retrieval import should_retrieve
-from weibull_decay import WeibullDecayModel, apply_decay_to_search_results
-from mmr_diversity import get_mmr_reranker
-from two_stage_dedup import TwoStageDedup
+from retrieval.adaptive_retrieval import should_retrieve
+from memory.weibull_decay import WeibullDecayModel, apply_decay_to_search_results
+from retrieval.mmr_diversity import get_mmr_reranker
+from retrieval.two_stage_dedup import TwoStageDedup
 
 
 @dataclass

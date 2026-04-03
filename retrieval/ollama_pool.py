@@ -10,7 +10,7 @@ Ollama 连接池与心跳缓存
 import time
 import requests
 from typing import Optional
-from memory_config import CONFIG
+from core.memory_config import CONFIG
 
 
 class OllamaConnectionPool:

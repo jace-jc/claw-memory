@@ -22,7 +22,7 @@ class MultiEmbedder:
     
     def __init__(self, config: Dict[str, Any] = None):
         if config is None:
-            from memory_config_multi import get_active_config
+            from core.memory_config_multi import get_active_config
             config = get_active_config().get_embedding_config()
         
         self.provider = config.get("provider", "ollama")

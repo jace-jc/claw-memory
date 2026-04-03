@@ -45,8 +45,8 @@ from api import (
 )
 
 # Import extract functions directly (not through api to avoid circular)
-from memory_extract import extract_from_messages, is_noise, quick_extract, deep_extract
-from memory_config import CONFIG
+from extract.memory_extract import extract_from_messages, is_noise, quick_extract, deep_extract
+from core.memory_config import CONFIG
 
 # Lazy loading for db store
 _db_store = None

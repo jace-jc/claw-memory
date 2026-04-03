@@ -7,7 +7,7 @@ import time
 import hashlib
 import requests
 from datetime import datetime
-from memory_config import CONFIG
+from core.memory_config import CONFIG
 
 # Ollama 健康检查缓存
 _ollama_last_check = None

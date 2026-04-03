@@ -30,7 +30,7 @@ def store(self, memory: dict, skip_dedup: bool = False, skip_post_processing: bo
     
     try:
         # 生成向量 - 使用 MultiEmbedder（自动适配所有方案）
-        from multi_embed import get_embedder
+        from retrieval.multi_embed import get_embedder
         import numpy as np
         
         # 【边界修复】内容长度限制 50KB
@@ -184,7 +184,7 @@ def store(self, memory: dict, skip_dedup: bool = False, skip_post_processing: bo
         
         # 【P2新增】两阶段去重检查（skip_dedup=True时跳过，用于benchmark）
         if not skip_dedup:
-            from two_stage_dedup import DedupDecision
+            from retrieval.two_stage_dedup import DedupDecision
             dedup_result = self._dedup.check(content, memory.get("type"))
             if dedup_result.decision == DedupDecision.SKIP:
                 _logger.info(f"[TwoStageDedup] 跳过重复内容: {dedup_result.reason}")

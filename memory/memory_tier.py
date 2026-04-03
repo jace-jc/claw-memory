@@ -11,8 +11,8 @@ import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
-from memory_config import CONFIG
-from memory_session import session_state
+from core.memory_config import CONFIG
+from memory.memory_session import session_state
 
 
 class MemoryTierManager:
