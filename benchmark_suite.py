@@ -578,39 +578,36 @@ class BenchmarkSuite:
                     "type": test.get("type", "fact"),
                     "importance": 0.9,
                     "source": f"benchmark_{test['id']}"
-                })
+                }, skip_dedup=True, skip_post_processing=True)  # benchmark完全隔离
                 if result:
-                    # 存储成功，记录source便于后续清理
-                    stored_ids.append(f"benchmark_{test['id']}")
+                    # 存储成功，记录返回的记忆ID（便于精确删除）
+                    stored_ids.append(result)
         
         print(f"  [Setup] 已存储 {len(stored_ids)} 条测试记忆")
         return stored_ids
     
-    def teardown_phase(self, source_ids: List[str]):
+    def teardown_phase(self, memory_ids: List[str]):
         """
-        【P0修复】清理阶段：删除测试记忆
+        清理阶段：精确删除测试记忆（通过ID直接删除）
         
         Args:
-            source_ids: 需要删除的记忆source列表
+            memory_ids: 需要删除的记忆ID列表
         """
-        if not source_ids:
+        if not memory_ids:
             return
         
         db = self._get_db()
-        print(f"  [Teardown] 清理 {len(source_ids)} 条测试记忆...")
+        print(f"  [Teardown] 清理 {len(memory_ids)} 条测试记忆...")
         
-        # 通过source字段查找并删除测试记忆
-        for source in source_ids:
+        deleted = 0
+        for mid in memory_ids:
             try:
-                # 搜索并删除
-                results = db.search(source.replace("benchmark_", ""), limit=10)
-                for r in results:
-                    if r.get("source") == source:
-                        db.delete(r.get("id"))
+                if db.delete(memory_id=mid):
+                    deleted += 1
             except Exception:
                 pass
         
-        print("  [Teardown] 清理完成")
+        print(f"  [Teardown] 已删除 {deleted}/{len(memory_ids)} 条记忆")
     
     def run_single(self, test_case: dict, limit: int = 5) -> dict:
         """运行单个测试用例"""
@@ -619,9 +616,9 @@ class BenchmarkSuite:
         
         start_time = time.time()
         
-        # 执行搜索
+        # 执行搜索（rerank=False 避免HuggingFace下载阻塞）
         try:
-            results = db.search_rrf(query, limit=limit)
+            results = db.search_rrf(query, limit=limit, use_rerank=False)
         except Exception as e:
             results = []
         

@@ -224,31 +224,76 @@ OPENAI → 方案C
 | COLD | > 0.5 | MEMORY.md + Git | 365d |
 | ARCHIVED | ≤ 0.5 | 归档目录 | 90d |
 
-## 📁 文件结构
+## 📁 文件结构 (v3.0 - Package Structure)
 
 ```
 claw-memory/
-├── memory_main.py      # 主入口
-├── memory_config.py    # 配置
-├── lancedb_store.py   # 向量存储
-├── kg_networkx.py      # 知识图谱
-├── intent_classifier.py # 意图分类
-├── chinese_extract.py  # 中文提取
-├── temporal_extract.py # 时序提取
-├── auto_extract.py    # 自动提取
-├── memory_tier_manager.py # 分层管理
-├── cross_encoder_rerank.py # Cross-Encoder
-├── memory_config_multi.py # 多部署配置
-├── multi_embed.py      # 多嵌入provider
-├── multi_rerank.py    # 多重排provider
-├── weibull_decay.py    # Weibull衰减模型 【NEW v2.0】
-├── version_history.py  # 版本历史与Git审计 【NEW v2.0】
-├── attachment_store.py # 附件持久化 【NEW v2.0】
-├── parallel_search.py  # 并行通道搜索 【NEW v2.0】
-├── adaptive_rerank.py # 自适应RRF权重 【NEW v2.0】
-├── benchmark_improvements.py # 优化效果基准测试 【NEW v2.0】
-└── tests/             # 测试
+├── __init__.py           # Main exports + backward compat
+├── SKILL.md              # This file
+├── skill.yaml            # Skill configuration
+│
+├── core/                 # Core storage and schema
+│   ├── __init__.py
+│   └── schema.py         # PyArrow schema definitions
+│   └── store.py          # LanceDB store (in lancedb_store.py)
+│
+├── retrieval/            # Search and retrieval
+│   ├── __init__.py
+│   ├── search.py         # Semantic search wrapper
+│   ├── rrf.py            # RRF fusion search
+│   ├── rerank.py         # Cross-encoder reranking
+│   ├── dedup.py          # Two-stage deduplication
+│   ├── cache.py          # Search caching
+│   └── intent.py         # Intent classification
+│
+├── memory/               # Memory domain operations
+│   ├── __init__.py
+│   ├── kg.py             # Knowledge graph operations
+│   ├── tier.py           # Tier management
+│   ├── version.py        # Version history
+│   ├── temporal.py       # Temporal tracking
+│   └── forgetting.py      # Weibull decay/forgetting
+│
+├── api/                  # Tool API functions
+│   ├── __init__.py
+│   ├── main.py           # (from memory_main.py)
+│   └── health.py         # Health check (broken circular dep)
+│
+├── extract/              # Memory extraction
+│   ├── __init__.py
+│   ├── extractor.py       # Main extraction logic
+│   ├── chinese.py         # Chinese entity extraction
+│   └── auto.py            # Auto extraction
+│
+├── infra/                # Infrastructure
+│   ├── __init__.py
+│   ├── backup.py          # Backup/restore
+│   ├── transaction.py      # WAL protocol
+│   ├── attachment.py      # Attachment storage
+│   └── performance.py     # Performance monitoring
+│
+├── benchmark/            # Benchmark suite
+│   ├── __init__.py
+│   ├── suite.py           # Main benchmark
+│   ├── runner.py          # Benchmark runner
+│   ├── cases.py           # Test cases
+│   └── improvements.py    # Improvement tests
+│
+├── tests/                # Test suite
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_store.py
+│   ├── test_search.py
+│   └── test_temporal.py
+│
+└── [legacy flat files]   # Original files preserved for compat
+    ├── lancedb_store.py   # LanceDB store
+    ├── memory_main.py     # Main API
+    ├── memory_config.py   # Configuration
+    └── ...                # Other modules
 ```
+
+**Backward Compatibility**: All old imports still work. New package structure provides organized access.
 
 ## 🧪 测试
 

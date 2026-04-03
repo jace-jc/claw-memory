@@ -19,3 +19,6 @@ DEFAULT_CONFIG = {
     "min_importance": 0.3,
     "encryption_enabled": False,  # 安全修复
 }
+
+# 兼容层：CONFIG = DEFAULT_CONFIG（多处模块依赖此别名）
+CONFIG = DEFAULT_CONFIG

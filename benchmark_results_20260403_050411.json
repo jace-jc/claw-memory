@@ -1,0 +1,190 @@
+{
+  "timestamp": "2026-04-03T05:04:11.181353",
+  "summary": {
+    "total_tests": 12,
+    "overall": {
+      "avg_mrr": 0.8333333333333334,
+      "avg_ndcg": 0.6530721079407211,
+      "avg_latency": 14892.657101154327,
+      "avg_relevance": 0.22546296296296298
+    },
+    "by_type": {
+      "fact": {
+        "count": 3,
+        "avg_mrr": 0.8333333333333334,
+        "avg_ndcg": 0.5151515151515151,
+        "avg_latency": 9753.548940022787
+      },
+      "preference": {
+        "count": 3,
+        "avg_mrr": 1.0,
+        "avg_ndcg": 0.959007299270073,
+        "avg_latency": 9846.839745839437
+      },
+      "entity": {
+        "count": 2,
+        "avg_mrr": 1.0,
+        "avg_ndcg": 0.5880000000000001,
+        "avg_latency": 9934.753060340881
+      },
+      "temporal": {
+        "count": 2,
+        "avg_mrr": 0.25,
+        "avg_ndcg": 0.168,
+        "avg_latency": 39839.21658992767
+      },
+      "relation": {
+        "count": 2,
+        "avg_mrr": 1.0,
+        "avg_ndcg": 0.9511944260119443,
+        "avg_latency": 10181.389927864075
+      }
+    }
+  },
+  "results": [
+    {
+      "test_id": "fact_001",
+      "query": "用户的工作是什么",
+      "type": "fact",
+      "results_count": 5,
+      "latency_ms": 9746.191024780273,
+      "recall": 0.5,
+      "mrr": 0.5,
+      "ndcg": 0.36000000000000004,
+      "relevance": 0.16666666666666666,
+      "top_result": "用户的名字叫张三，是一名软件工程师"
+    },
+    {
+      "test_id": "fact_002",
+      "query": "用户的名字叫什么",
+      "type": "fact",
+      "results_count": 5,
+      "latency_ms": 9751.178979873657,
+      "recall": 0.3333333333333333,
+      "mrr": 1.0,
+      "ndcg": 0.5454545454545455,
+      "relevance": 0.1111111111111111,
+      "top_result": "用户的名字叫张三，是一名软件工程师"
+    },
+    {
+      "test_id": "fact_003",
+      "query": "用户在哪里住",
+      "type": "fact",
+      "results_count": 5,
+      "latency_ms": 9763.276815414429,
+      "recall": 0.5,
+      "mrr": 1.0,
+      "ndcg": 0.64,
+      "relevance": 0.16666666666666666,
+      "top_result": "用户住在上海浦东新区，公司在徐汇区"
+    },
+    {
+      "test_id": "pref_001",
+      "query": "用户喜欢什么编程语言",
+      "type": "preference",
+      "results_count": 5,
+      "latency_ms": 9797.652244567871,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "relevance": 0.3333333333333333,
+      "top_result": "用户喜欢使用Python和JavaScript编程，偏爱React框架"
+    },
+    {
+      "test_id": "pref_002",
+      "query": "用户的饮食偏好",
+      "type": "preference",
+      "results_count": 5,
+      "latency_ms": 9864.114999771118,
+      "recall": 0.8,
+      "mrr": 1.0,
+      "ndcg": 0.7810218978102189,
+      "relevance": 0.4666666666666666,
+      "top_result": "用户的饮食偏好是川菜和火锅，不喜欢辣的食物"
+    },
+    {
+      "test_id": "pref_003",
+      "query": "用户喜欢什么音乐",
+      "type": "preference",
+      "results_count": 5,
+      "latency_ms": 9878.751993179321,
+      "recall": 1.25,
+      "mrr": 1.0,
+      "ndcg": 1.096,
+      "relevance": 0.4166666666666667,
+      "top_result": "用户喜欢听古典音乐和爵士乐，讨厌重金属"
+    },
+    {
+      "test_id": "entity_001",
+      "query": "用户认识哪些人",
+      "type": "entity",
+      "results_count": 5,
+      "latency_ms": 9907.580137252808,
+      "recall": 0.5,
+      "mrr": 1.0,
+      "ndcg": 0.5760000000000001,
+      "relevance": 0.08333333333333333,
+      "top_result": "用户的朋友小李喜欢弹吉他，用户的朋友小王喜欢打篮球"
+    },
+    {
+      "test_id": "entity_002",
+      "query": "用户使用什么工具",
+      "type": "entity",
+      "results_count": 5,
+      "latency_ms": 9961.925983428955,
+      "recall": 0.5,
+      "mrr": 1.0,
+      "ndcg": 0.6000000000000001,
+      "relevance": 0.08333333333333333,
+      "top_result": "用户的名字叫张三，是一名软件工程师"
+    },
+    {
+      "test_id": "temporal_001",
+      "query": "用户最近在做什么项目",
+      "type": "temporal",
+      "results_count": 5,
+      "latency_ms": 31211.066007614136,
+      "recall": 0.5,
+      "mrr": 0.5,
+      "ndcg": 0.336,
+      "relevance": 0.16666666666666666,
+      "top_result": "用户这周计划完成API文档编写和代码评审"
+    },
+    {
+      "test_id": "temporal_002",
+      "query": "用户以前喜欢什么",
+      "type": "temporal",
+      "results_count": 5,
+      "latency_ms": 48467.36717224121,
+      "recall": 0.0,
+      "mrr": 0.0,
+      "ndcg": 0.0,
+      "relevance": 0.0,
+      "top_result": "用户喜欢使用Python和JavaScript编程，偏爱React框架"
+    },
+    {
+      "test_id": "relation_001",
+      "query": "用户工作用的技术栈",
+      "type": "relation",
+      "results_count": 5,
+      "latency_ms": 10179.472923278809,
+      "recall": 0.4,
+      "mrr": 1.0,
+      "ndcg": 0.6569343065693432,
+      "relevance": 0.26666666666666666,
+      "top_result": "用户在Google工作，使用React、TypeScript和Python技术栈"
+    },
+    {
+      "test_id": "relation_002",
+      "query": "用户朋友的爱好",
+      "type": "relation",
+      "results_count": 5,
+      "latency_ms": 10183.30693244934,
+      "recall": 1.6666666666666667,
+      "mrr": 1.0,
+      "ndcg": 1.2454545454545454,
+      "relevance": 0.4444444444444444,
+      "top_result": "用户的饮食偏好是川菜和火锅，不喜欢辣的食物"
+    }
+  ]
+}
