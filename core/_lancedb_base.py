@@ -20,12 +20,27 @@ from pathlib import Path
 from typing import Optional, Union
 import lancedb
 import pyarrow as pa
-from core.memory_config import CONFIG
-from core.memory_config_multi import get_active_config
 
-from retrieval.mmr_diversity import get_mmr_reranker
-from retrieval.two_stage_dedup import TwoStageDedup, DedupDecision
-from infra.wal_protocol import WALProtocol
+# 【修复循环导入】使用延迟导入，避免 core → retrieval → lancedb_store → core 循环
+def _get_config():
+    from core.memory_config import CONFIG
+    return CONFIG
+
+def _get_active_config():
+    from core.memory_config_multi import get_active_config
+    return get_active_config()
+
+def _get_mmr_reranker():
+    from retrieval.mmr_diversity import get_mmr_reranker
+    return get_mmr_reranker
+
+def _get_two_stage_dedup():
+    from retrieval.two_stage_dedup import TwoStageDedup, DedupDecision
+    return TwoStageDedup
+
+def _get_wal_protocol():
+    from infra.wal_protocol import WALProtocol
+    return WALProtocol
 
 # 配置日志 - 【P1修复】添加错误日志
 logging.basicConfig(
@@ -77,12 +92,12 @@ SCHEMA = _build_schema(1024)
 
 class LanceDBStore:
     def __init__(self, db_path=None):
-        self.db_path = db_path or CONFIG.get("db_path", "/Users/claw/.openclaw/workspace/memory/lancedb")
+        self.db_path = db_path or _get_config().get("db_path", "/Users/claw/.openclaw/workspace/memory/lancedb")
         self._ensure_dir()
         self.db = self._connect()
         self.table = self._get_table()
-        self._dedup = TwoStageDedup(use_llm=False)
-        self._wal = WALProtocol(auto_load=True)
+        self._dedup = _get_two_stage_dedup()(use_llm=False)
+        self._wal = _get_wal_protocol()(auto_load=True)
         self._init_dedup()
     
     def _ensure_dir(self):
@@ -95,7 +110,7 @@ class LanceDBStore:
             if self.db is not None:
                 try:
                     # 尝试获取表列表验证连接
-                    _ = self.db.table_names()
+                    _ = self.db.list_tables()
                     if self.table is None:
                         self.table = self._get_table()
                     return True
@@ -120,7 +135,7 @@ class LanceDBStore:
         if self.db is None:
             return None
         try:
-            table_names = self.db.table_names()
+            table_names = self.db.list_tables()
             if "memories" in table_names:
                 return self.db.open_table("memories")
             

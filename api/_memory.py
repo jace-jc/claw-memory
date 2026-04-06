@@ -8,8 +8,8 @@ warnings.filterwarnings("ignore", category=Warning, module="urllib3")
 
 def get_db():
     """Lazy import to avoid circular dependency"""
-    from memory_main import get_db as _get_db
-    return _get_db()
+    from core._db import get_db as _get_core_db
+    return _get_core_db()
 
 
 def api_response(

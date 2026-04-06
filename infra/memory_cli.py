@@ -225,7 +225,8 @@ class MemoryCLI:
                 return 0
 
             # 执行语义搜索
-            results = db.search(args.query, limit=10, use_rerank=True)
+            use_rerank = not args.no_rerank
+            results = db.search(args.query, limit=10, use_rerank=use_rerank)
 
             if not results:
                 print(yellow("未找到匹配结果"))
@@ -428,6 +429,7 @@ def main():
     # search命令
     search_parser = subparsers.add_parser("search", help="搜索记忆")
     search_parser.add_argument("query", type=str, help="搜索关键词")
+    search_parser.add_argument("--no-rerank", action="store_true", help="禁用Cross-Encoder重排（离线环境用）")
     
     # delete命令
     delete_parser = subparsers.add_parser("delete", help="删除记忆")

@@ -15,8 +15,8 @@ from core.memory_config import CONFIG
 
 def get_db():
     """Lazy import to avoid circular dependency"""
-    from memory_main import get_db as _get_db
-    return _get_db()
+    from core._db import get_db as _get_core_db
+    return _get_core_db()
 
 
 def api_response(
@@ -64,7 +64,7 @@ def memory_store(
         }
     
     # 【P0优化】使用连接池检查Ollama健康状态，避免频繁embed调用
-    from ollama_pool import get_pool
+    from retrieval.ollama_pool import get_pool
     pool = get_pool()
     if not pool.is_healthy():
         return {
@@ -88,7 +88,7 @@ def memory_store(
 
     # 【P2新增】自动分配层级
     try:
-        from memory_tier_manager import assign_tier_for_memory, TIER_WARM
+        from memory.memory_tier_manager import assign_tier_for_memory, TIER_WARM
         assigned_tier = assign_tier_for_memory(memory)
         memory["tier"] = assigned_tier
     except Exception:
@@ -111,7 +111,7 @@ def memory_store(
             pass  # 知识图谱失败不影响主流程
 
     # 同时更新 HOT RAM
-    from memory_session import session_state
+    from memory.memory_session import session_state
     if success:
         if type == "preference":
             session_state.add_preference(content)
@@ -200,7 +200,7 @@ def memory_search_rrf(
     weights = None
     if use_adaptive:
         try:
-            from adaptive_rerank import get_adaptive_rrf
+            from retrieval.adaptive_rerank import get_adaptive_rrf
             adaptive = get_adaptive_rrf()
             weights = adaptive.get_weights()
         except:
@@ -256,7 +256,7 @@ def memory_adaptive(action: str = "weights", memory_id: str = None, query: str =
         query: 查询词（click时必填）
     """
     try:
-        from adaptive_rerank import get_adaptive_rrf
+        from retrieval.adaptive_rerank import get_adaptive_rrf
         
         adaptive = get_adaptive_rrf()
         

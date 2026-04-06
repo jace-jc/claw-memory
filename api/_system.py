@@ -13,8 +13,8 @@ from datetime import datetime
 
 def get_db():
     """Lazy import to avoid circular dependency"""
-    from memory_main import get_db as _get_db
-    return _get_db()
+    from core._db import get_db as _get_core_db
+    return _get_core_db()
 
 
 def api_response(
@@ -42,9 +42,9 @@ def memory_tier(action: str = "view", tier: str = "ALL") -> dict:
     - COLD: 重要性 > 0.5, MEMORY.md + Git
     - ARCHIVED: 重要性 <= 0.5, 可遗忘
     """
-    from memory_tier import tier_manager
-    from memory_session import session_state
-    from memory_tier_manager import (
+    from memory.memory_tier import tier_manager
+    from memory.memory_session import session_state
+    from memory.memory_tier_manager import (
         get_tier_manager, TIER_HOT, TIER_WARM, TIER_COLD, TIER_ARCHIVED,
         get_tier, move_tier, get_tier_stats
     )
@@ -136,7 +136,7 @@ def memory_tier_get(memory_id: str) -> dict:
         }
     """
     try:
-        from memory_tier_manager import get_tier as v2_get_tier
+        from memory.memory_tier_manager import get_tier as v2_get_tier
         return v2_get_tier(memory_id)
     except Exception as e:
         return api_response(success=False, error=str(e))
@@ -155,7 +155,7 @@ def memory_tier_move(memory_id: str, tier: str, force: bool = False) -> dict:
         移动结果
     """
     try:
-        from memory_tier_manager import move_tier as v2_move_tier
+        from memory.memory_tier_manager import move_tier as v2_move_tier
         result = v2_move_tier(memory_id, tier, force)
         return api_response(
             success=result.get("success", False),
@@ -184,7 +184,7 @@ def memory_tier_stats_v2() -> dict:
         }
     """
     try:
-        from memory_tier_manager import get_tier_stats as v2_stats
+        from memory.memory_tier_manager import get_tier_stats as v2_stats
         return api_response(success=True, data=v2_stats())
     except Exception as e:
         return api_response(success=False, error=str(e))
@@ -195,8 +195,8 @@ def memory_stats() -> dict:
     获取记忆统计【P0修复】统一响应格式
     """
     try:
-        from memory_tier import tier_manager
-        from memory_session import session_state
+        from memory.memory_tier import tier_manager
+        from memory.memory_session import session_state
         from core.memory_config import CONFIG
 
         db = get_db()
@@ -233,7 +233,7 @@ def memory_temporal(action: str = "changes", memory_id: str = None, days: int = 
         memory_id: 记忆ID（history时必填）
         days: 查询天数（changes时使用）
     """
-    from temporal_tracking import get_temporal
+    from memory.temporal_tracking import get_temporal
     
     temporal = get_temporal()
     
@@ -287,7 +287,7 @@ def memory_temporal_extract(text: str, reference_date: str = None) -> dict:
     Returns:
         时间信息列表
     """
-    from temporal_extract import extract_temporal, temporal_to_timestamp
+    from memory.temporal_extract import extract_temporal, temporal_to_timestamp
     
     ref = None
     if reference_date:
@@ -321,7 +321,7 @@ def memory_cache(action: str = "stats") -> dict:
         action: 操作 - stats|clear|invalidate|perf
     """
     try:
-        from search_cache import get_search_cache, get_embedding_cache
+        from retrieval.search_cache import get_search_cache, get_embedding_cache
         
         cache = get_search_cache()
         
@@ -375,7 +375,7 @@ def memory_kg(action: str = "stats", entity: str = None, depth: int = 2,
         entity2: 第二个实体（用于path和common）
         depth: 探索深度
     """
-    from kg_networkx import get_kg_nx
+    from memory.kg_networkx import get_kg_nx
     
     kg = get_kg_nx()
     

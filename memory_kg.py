@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict
 from collections import defaultdict
-from memory_config import CONFIG
+from core.memory_config import CONFIG
 
 
 class KnowledgeGraph:

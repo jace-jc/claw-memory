@@ -12,7 +12,7 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Set
+from typing import Optional, List, Dict, Set, Any
 import networkx as nx
 from core.memory_config import CONFIG
 
@@ -456,6 +456,100 @@ class KnowledgeGraphNX:
                 if len(results) >= limit:
                     break
         return results
+    
+    def detect_contradictions(self, files: List[dict] = None) -> List[Dict[str, Any]]:
+        """【P1修复】检测 KG 中的矛盾
+        
+        Args:
+            files: 可选的文件列表，每个文件包含 content 和 date 字段
+                   如果不提供，则扫描 kg_path 目录下的所有 .md 文件
+        
+        Returns:
+            矛盾列表，每项包含 type, entity, conflicts 等字段
+        """
+        import re
+        from pathlib import Path
+        
+        if files is None:
+            # 扫描 kg_path 目录下的所有 .md 文件
+            kg_dir = Path(self.kg_path).parent if self.kg_path else None
+            if kg_dir is None:
+                return []
+            files = []
+            for md_file in kg_dir.glob("*.md"):
+                try:
+                    content = md_file.read_text(encoding="utf-8")
+                    files.append({
+                        "path": str(md_file),
+                        "date": md_file.stem,
+                        "content": content
+                    })
+                except Exception:
+                    continue
+        
+        # 使用 KG 数据进行矛盾检测
+        kg_data = {
+            "nodes": dict(self.graph.nodes(data=True)),
+            "edges": [{"from": u, "to": v, "type": d.get("type", "related")} 
+                      for u, v, d in self.graph.edges(data=True)]
+        }
+        
+        # 提取关键事实
+        def extract_key_facts(content: str) -> dict:
+            tasks = re.findall(r'[❌✅]\s*\[?\s*(.+?)\s*\]?', content)
+            prefs = re.findall(r'偏好[：:]\s*(.+)', content)
+            return {"tasks": tasks, "preferences": prefs}
+        
+        conflicts = []
+        task_index = {}
+        pref_index = {}
+        
+        for f in files:
+            facts = extract_key_facts(f.get("content", ""))
+            for task in facts.get("tasks", []):
+                task_clean = re.sub(r"^[❌✅]\s*", "", task).strip()
+                if task_clean:
+                    if task_clean not in task_index:
+                        task_index[task_clean] = []
+                    task_index[task_clean].append(f)
+            
+            for pref in facts.get("preferences", []):
+                if pref:
+                    key = pref.strip()[:30]
+                    if key not in pref_index:
+                        pref_index[key] = []
+                    pref_index[key].append(f)
+        
+        # 检测任务状态矛盾（已完成 vs 未完成）
+        for task_desc, file_list in task_index.items():
+            if len(file_list) < 2:
+                continue
+            has_pending = any("❌" in t for t in file_list)
+            has_done = any("✅" in t for t in file_list)
+            if has_pending and has_done:
+                dates = [f.get("date", "") for f in file_list]
+                conflicts.append({
+                    "type": "task_status_conflict",
+                    "entity": task_desc,
+                    "conflicts": dates,
+                    "severity": "high"
+                })
+        
+        # 检测偏好矛盾
+        for pref_key, file_list in pref_index.items():
+            if len(file_list) < 2:
+                continue
+            # 简化检测：同一偏好出现在多个不同日期
+            dates = list(set(f.get("date", "") for f in file_list))
+            if len(dates) > 1:
+                conflicts.append({
+                    "type": "preference_conflict",
+                    "entity": pref_key,
+                    "conflicts": dates,
+                    "severity": "medium"
+                })
+        
+        return conflicts
 
 
 # 全局实例

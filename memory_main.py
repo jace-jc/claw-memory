@@ -56,8 +56,8 @@ def get_db():
     """Lazy import to avoid circular dependency"""
     global _db_store
     if _db_store is None:
-        from lancedb_store import get_db_store
-        _db_store = get_db_store()
+        from core._db import get_db as _get_core_db
+        _db_store = _get_core_db()
     return _db_store
 
 

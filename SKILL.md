@@ -1,7 +1,7 @@
 # Claw Memory - OpenClaw 记忆系统技能
 
 > 本地优先的AI记忆系统，支持多通道RRF检索、知识图谱、时序追踪
-> **版本：v2.9** - 聚焦记忆质量：去噪过滤+阈值强制化+矛盾检测+提取召回隔离
+> **版本：v2.8.0** - 聚焦记忆质量：去噪过滤+阈值强制化+矛盾检测+提取召回隔离
 
 ## 🎯 技能简介
 
@@ -224,7 +224,7 @@ OPENAI → 方案C
 | COLD | > 0.5 | MEMORY.md + Git | 365d |
 | ARCHIVED | ≤ 0.5 | 归档目录 | 90d |
 
-## 📁 文件结构 (v3.0 - Package Structure)
+## 📁 文件结构 (v2.8.0 - Package Structure)
 
 ```
 claw-memory/

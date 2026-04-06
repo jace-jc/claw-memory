@@ -95,7 +95,10 @@ class AdaptiveRetrieval:
         if self._contains_memory_keywords(query):
             return True
         
-        return False
+        # 【P0修复】短查询不跳过，改用BM25搜索
+        # 原来: return False (导致短查询返回空)
+        # 现在: return True (让BM25接管短查询)
+        return True
     
     def _matches_skip_pattern(self, query: str) -> bool:
         """检查是否匹配跳过模式"""

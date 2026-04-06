@@ -1,12 +1,16 @@
 """
 Data Unification - Consolidates memory from multiple sources
 
-Problem: Three systems each storing 181 duplicate memories = 543 total (67% waste)
-- OpenClaw memory/*.md: 181 memories
-- SuperMemory (localhost:3001): 181 memories
-- Mem0 (localhost:3002): 181 memories
+[P2 - 待实现] 当多源记忆系统（SuperMemory/Mem0）需要整合时启用。
+当前激活的去重系统: dream_dedup (dream_consolidation/dream_utils.py)
 
-Solution: Deduplicate by content hash, create unified single source of truth.
+问题: 三个系统各存 181 条重复记忆 = 543 总数 (67% 浪费)
+- OpenClaw memory/*.md: 181 memories
+- SuperMemory (localhost:3001): 181 memories (可能离线)
+- Mem0 (localhost:3002): 181 memories (可能离线)
+
+方案: 按内容 hash 去重，创建统一的事实来源。
+当前由 dream_dedup 替代处理日常去重。
 """
 import os
 import json

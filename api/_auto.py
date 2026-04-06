@@ -11,8 +11,8 @@ from typing import Optional, Any, Dict, List
 
 def get_db():
     """Lazy import to avoid circular dependency"""
-    from memory_main import get_db as _get_db
-    return _get_db()
+    from core._db import get_db as _get_core_db
+    return _get_core_db()
 
 
 def api_response(
@@ -39,7 +39,7 @@ def memory_batch(operations: list, use_transaction: bool = True) -> dict:
         use_transaction: 是否使用事务（默认True，失败自动回滚）
     """
     try:
-        from transaction import with_transaction
+        from infra.transaction import with_transaction
         
         db = get_db()
         
@@ -98,7 +98,7 @@ def memory_batch(operations: list, use_transaction: bool = True) -> dict:
 def memory_transaction_stats() -> dict:
     """【P1新增】获取事务统计"""
     try:
-        from transaction import TransactionLog
+        from infra.transaction import TransactionLog
         log = TransactionLog()
         stats = log.get_stats()
         return api_response(success=True, data=stats)
@@ -149,7 +149,7 @@ def memory_auto_extract(text: str = "", messages: list = None) -> dict:
     Returns:
         提取的事实列表，包含类型、内容、实体、置信度
     """
-    from auto_extract import get_auto_extractor
+    from extract.auto_extract import get_auto_extractor
     
     extractor = get_auto_extractor()
     
