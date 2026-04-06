@@ -18,16 +18,19 @@ warnings.warn(
 import os
 import json
 import uuid
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 from core.memory_config import CONFIG
 from memory.memory_session import session_state
 
+logger = logging.getLogger(__name__)
+
 
 class MemoryTierManager:
     def __init__(self):
-        self.memory_dir = Path(CONFIG.get("memory_dir", "/Users/claw/.openclaw/workspace/memory"))
+        self.memory_dir = Path(CONFIG.get("memory_dir", str(Path.home() / ".openclaw/workspace/memory")))
         self.cold_dir = self.memory_dir / "cold"
         self.cold_dir.mkdir(parents=True, exist_ok=True)
     
@@ -275,7 +278,8 @@ class MemoryTierManager:
                 cold_dir_resolved = self.cold_dir.resolve()
                 if not str(resolved).startswith(str(cold_dir_resolved)):
                     return {"success": False, "message": "非法路径"}
-            except:
+            except Exception as e:
+                logger.warning(f"路径解析失败: {e}")
                 return {"success": False, "message": "路径解析失败"}
             
             if not filepath.exists():
@@ -339,12 +343,14 @@ class MemoryTierManager:
         try:
             db = get_db_store()
             warm_stats = db.stats()
-        except:
+        except Exception as e:
+            logger.warning(f"获取WARM层统计失败: {e}")
             warm_stats = {"total": 0, "by_type": {}}
         
         try:
             cold_files = list(self.cold_dir.glob("*.md"))
-        except:
+        except Exception as e:
+            logger.warning(f"获取COLD层文件列表失败: {e}")
             cold_files = []
         
         return {

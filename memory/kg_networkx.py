@@ -10,11 +10,14 @@
 """
 import json
 import uuid
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Set, Any
 import networkx as nx
 from core.memory_config import CONFIG
+
+logger = logging.getLogger(__name__)
 
 
 class KnowledgeGraphNX:
@@ -26,7 +29,7 @@ class KnowledgeGraphNX:
     
     def __init__(self, kg_path: str = None):
         self.kg_path = kg_path or CONFIG.get("kg_path",
-            str(Path(CONFIG.get("memory_dir", "/Users/claw/.openclaw/workspace/memory")) / "knowledge_graph.json"))
+            str(Path(CONFIG.get("memory_dir", str(Path.home() / ".openclaw/workspace/memory"))) / "knowledge_graph.json"))
         self._ensure_dir()
         
         # 尝试加载旧版本JSON
@@ -250,7 +253,8 @@ class KnowledgeGraphNX:
         try:
             path = nx.shortest_path(self.graph, root, target)
             return len(path) - 1
-        except:
+        except Exception as e:
+            logger.warning(f"计算路径深度失败: {e}")
             return max_depth
     
     def get_stats(self) -> Dict:

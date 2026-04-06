@@ -144,7 +144,8 @@ class MultiEmbedder:
         """健康检查"""
         try:
             return bool(self.embed("health check test"))
-        except:
+        except Exception as e:
+            logger.warning(f"健康检查失败: {e}")
             return False
     
     def __repr__(self):

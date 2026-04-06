@@ -92,7 +92,7 @@ SCHEMA = _build_schema(1024)
 
 class LanceDBStore:
     def __init__(self, db_path=None):
-        self.db_path = db_path or _get_config().get("db_path", "/Users/claw/.openclaw/workspace/memory/lancedb")
+        self.db_path = db_path or _get_config().get("db_path", str(Path.home() / ".openclaw/workspace/memory/lancedb"))
         self._ensure_dir()
         self.db = self._connect()
         self.table = self._get_table()

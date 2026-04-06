@@ -5,9 +5,12 @@
 import hashlib
 import time
 import json
+import logging
 from typing import Optional, List, Dict
 from collections import OrderedDict
 from threading import Lock
+
+logger = logging.getLogger(__name__)
 
 
 class SearchCache:
@@ -154,8 +157,8 @@ class SearchCache:
                     results = search_func(query, limit=5)
                     self.set(query, results, limit=5)
                     prefetched += 1
-                except:
-                    pass
+                except Exception as e:
+                    logger.warning(f"预热缓存失败: {e}")
         return prefetched
 
 

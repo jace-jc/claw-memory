@@ -71,7 +71,8 @@ class VectorProvider:
         """健康检查"""
         try:
             return len(self.embed("test")) > 0
-        except:
+        except Exception as e:
+            logger.warning(f"Provider健康检查失败: {e}")
             return False
 
 
@@ -107,7 +108,8 @@ class OllamaProvider(VectorProvider):
                 timeout=5
             )
             return response.status_code == 200
-        except:
+        except Exception as e:
+            logger.warning(f"Ollama健康检查失败: {e}")
             return False
 
 

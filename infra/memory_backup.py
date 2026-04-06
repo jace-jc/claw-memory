@@ -5,9 +5,12 @@ Claw Memory 备份与导出模块
 import json
 import os
 import shutil
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List
+
+logger = logging.getLogger(__name__)
 
 # 备份目录
 BACKUP_DIR = Path(__file__).parent / "backups"
@@ -152,8 +155,8 @@ def _restore_backup(backup_path: str) -> dict:
                     metadata=mem
                 )
                 count += 1
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"恢复记忆条目失败: {e}")
         
         return {
             "success": True,
@@ -294,8 +297,8 @@ def auto_backup_schedule(interval_hours: int = 24, max_backups: int = 7) -> dict
             try:
                 Path(backup["path"]).unlink()
                 deleted += 1
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"删除旧备份失败: {e}")
         
         return {
             "success": True,

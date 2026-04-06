@@ -28,9 +28,12 @@ import json
 import math
 import time
 import uuid
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List
+
+logger = logging.getLogger(__name__)
 
 # 配置文件路径
 CONFIG_DIR = Path(__file__).parent
@@ -76,8 +79,8 @@ class WeibullDecayModel:
             try:
                 with open(DECAY_STATE_FILE, 'r') as f:
                     return json.load(f)
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"加载衰减状态失败: {e}")
         return {"memories": {}, "stats": {"total": 0, "cold_storage": 0}}
     
     def _save_state(self):

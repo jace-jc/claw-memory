@@ -101,9 +101,9 @@ class TestAssignTier:
         try:
             from memory.memory_tier_manager import assign_tier_for_memory, TIER_WARM
 
-            # High importance → HOT
+            # High importance → WARM (HOT is session-level, new memories go to WARM)
             high = {"id": "test-1", "content": "important", "importance": 0.95}
-            assert assign_tier_for_memory(high) == "HOT"
+            assert assign_tier_for_memory(high) == "WARM"
 
             # Medium importance → WARM
             mid = {"id": "test-2", "content": "normal", "importance": 0.75}

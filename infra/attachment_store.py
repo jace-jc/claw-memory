@@ -22,14 +22,17 @@ import json
 import uuid
 import shutil
 import hashlib
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, List, Union
 from dataclasses import dataclass, asdict
 
+logger = logging.getLogger(__name__)
+
 
 # 配置文件路径
-MEMORY_DIR = Path("/Users/claw/.openclaw/workspace/memory")
+MEMORY_DIR = Path.home() / ".openclaw/workspace/memory"
 ATTACHMENTS_DIR = MEMORY_DIR / "attachments"
 INDEX_FILE = ATTACHMENTS_DIR / "attachments_index.json"
 
@@ -101,8 +104,8 @@ class AttachmentStore:
             try:
                 with open(self.index_file, 'r') as f:
                     return json.load(f)
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"加载附件索引失败: {e}")
         return {"attachments": {}, "by_memory": {}, "by_type": {}}
     
     def _save_index(self):

@@ -150,7 +150,8 @@ class TwoStageDedup:
                             **mem,
                             "_similarity": similarity
                         })
-                except:
+                except Exception as e:
+                    _logger.warning(f"相似度计算失败: {e}")
                     continue
             
             # 按相似度降序排列

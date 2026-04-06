@@ -11,9 +11,12 @@
 - 提取池（Extraction Pool）：新记忆来源，与召回池完全隔离
 """
 import json
+import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Set
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class DualBufferArchitecture:
@@ -30,7 +33,7 @@ class DualBufferArchitecture:
     """
     
     def __init__(self, base_path: str = None):
-        self.base_path = Path(base_path or "/Users/claw/.openclaw/workspace/memory")
+        self.base_path = Path(base_path or str(Path.home() / ".openclaw/workspace/memory"))
         self.recall_pool_path = self.base_path / "recall_pool"
         self.extraction_pool_path = self.base_path / "extraction_pool"
         
@@ -52,7 +55,8 @@ class DualBufferArchitecture:
         if recall_meta.exists():
             try:
                 self._recall_index = json.loads(recall_meta.read_text())
-            except:
+            except Exception as e:
+                logger.warning(f"加载召回池索引失败: {e}")
                 self._recall_index = {}
         
         # 提取池索引
@@ -60,7 +64,8 @@ class DualBufferArchitecture:
         if extraction_meta.exists():
             try:
                 self._extraction_index = json.loads(extraction_meta.read_text())
-            except:
+            except Exception as e:
+                logger.warning(f"加载提取池索引失败: {e}")
                 self._extraction_index = {}
     
     def _save_indices(self):

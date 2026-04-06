@@ -19,12 +19,15 @@ import json
 import subprocess
 import hashlib
 import time
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
+logger = logging.getLogger(__name__)
+
 # 配置文件路径
-MEMORY_DIR = Path("/Users/claw/.openclaw/workspace/memory")
+MEMORY_DIR = Path.home() / ".openclaw/workspace/memory"
 CHANGELOG_FILE = MEMORY_DIR / "changelog.md"
 GIT_DIR = MEMORY_DIR / ".git"
 VERSIONS_DIR = MEMORY_DIR / "versions"
@@ -379,7 +382,8 @@ Reason: {reason}"""
         """
         try:
             target_date = datetime.fromisoformat(date)
-        except:
+        except Exception as e:
+            logger.warning(f"日期解析失败: {e}")
             return None
         
         # 查找该日期之前的最新版本
@@ -400,7 +404,8 @@ Reason: {reason}"""
                     data["recalled_at"] = datetime.now().isoformat()
                     data["recalled_date"] = date
                     return data
-            except:
+            except Exception as e:
+                logger.warning(f"版本历史读取失败: {e}")
                 continue
         
         return None
@@ -424,7 +429,8 @@ Reason: {reason}"""
                     data = json.load(f)
                 data["version_file"] = str(vf)
                 history.append(data)
-            except:
+            except Exception as e:
+                logger.warning(f"历史记录读取失败: {e}")
                 continue
         
         return history

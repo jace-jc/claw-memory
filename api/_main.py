@@ -7,10 +7,13 @@ warnings.filterwarnings("ignore", category=Warning, module="urllib3")
 
 import json
 import uuid
+import logging
 from datetime import datetime
 from typing import Optional, Any, Dict, List
 from extract.memory_extract import extract_from_messages, is_noise, quick_extract, deep_extract
 from core.memory_config import CONFIG
+
+logger = logging.getLogger(__name__)
 
 
 def get_db():
@@ -203,8 +206,8 @@ def memory_search_rrf(
             from retrieval.adaptive_rerank import get_adaptive_rrf
             adaptive = get_adaptive_rrf()
             weights = adaptive.get_weights()
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"加载自适应权重失败: {e}")
 
     # 计算通道贡献
     channel_stats = {

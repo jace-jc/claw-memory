@@ -10,10 +10,13 @@
 """
 import json
 import time
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 from collections import defaultdict
 from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
 
 # 配置文件路径
 CONFIG_DIR = Path(__file__).parent
@@ -62,8 +65,8 @@ class AdaptiveRRF:
                 with open(WEIGHTS_FILE, 'r') as f:
                     data = json.load(f)
                     return data.get("weights", DEFAULT_WEIGHTS.copy())
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"加载权重配置失败: {e}")
         return DEFAULT_WEIGHTS.copy()
     
     def _save_weights(self):
@@ -81,8 +84,8 @@ class AdaptiveRRF:
             try:
                 with open(FEEDBACK_FILE, 'r') as f:
                     return json.load(f)
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"加载反馈数据失败: {e}")
         return {"clicks": [], "skips": [], "ratings": []}
     
     def _save_feedback(self):

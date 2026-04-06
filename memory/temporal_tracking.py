@@ -3,10 +3,13 @@
 支持记忆的时间范围追踪、版本管理和历史追溯
 """
 import json
+import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from pathlib import Path
 from core.memory_config import CONFIG
+
+logger = logging.getLogger(__name__)
 
 
 class TemporalMemory:
@@ -36,8 +39,8 @@ class TemporalMemory:
             try:
                 with open(self.version_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"加载版本历史失败: {e}")
         return {"versions": {}, "superseded": {}}
     
     def _save_versions(self):

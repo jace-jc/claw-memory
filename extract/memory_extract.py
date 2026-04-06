@@ -5,9 +5,12 @@ import re
 import json
 import time
 import hashlib
+import logging
 import requests
 from datetime import datetime
 from core.memory_config import CONFIG
+
+logger = logging.getLogger(__name__)
 
 # Ollama 健康检查缓存
 _ollama_last_check = None
@@ -233,8 +236,8 @@ def deep_extract(transcript: str) -> list[dict]:
                 if match:
                     try:
                         return json.loads(match.group(0))
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"JSON解析失败: {e}")
     except Exception as e:
         print(f"[DeepExtract] error: {e}")
     

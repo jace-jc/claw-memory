@@ -8,9 +8,12 @@
 import os
 import json
 import argparse
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 # CLI颜色输出
@@ -184,7 +187,8 @@ class MemoryCLI:
                                 from datetime import datetime
                                 dt = datetime.fromisoformat(updated_at)
                                 time_str = dt.strftime('%Y-%m-%d %H:%M')
-                            except:
+                            except Exception as e:
+                                logger.warning(f"时间解析失败: {e}")
                                 time_str = updated_at[:16]
                         else:
                             time_str = "unknown"
@@ -266,7 +270,8 @@ class MemoryCLI:
                         from datetime import datetime
                         dt = datetime.fromisoformat(updated_at)
                         print(f"   {green(str(len(content)))} bytes | {dt.strftime('%Y-%m-%d %H:%M')}")
-                    except:
+                    except Exception as e:
+                        logger.warning(f"时间解析失败: {e}")
                         print(f"   {green(str(len(content)))} bytes")
                 else:
                     print(f"   {green(str(len(content)))} bytes")
@@ -331,8 +336,8 @@ class MemoryCLI:
                     "size": len(content),
                     "modified": datetime.fromtimestamp(f.stat().st_mtime).isoformat()
                 })
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"处理文件失败: {e}")
         
         try:
             with open(output_file, "w") as f:
