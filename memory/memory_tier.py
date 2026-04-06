@@ -4,7 +4,17 @@
 - TTL 晋升机制
 - COLD 归档层
 - 定时整理任务
+
+[DEPRECATED] 请使用 memory.memory_tier_manager.MemoryTierManagerV2
+此模块保留用于向后兼容，未来版本将移除。
 """
+import warnings
+warnings.warn(
+    "memory.memory_tier.MemoryTierManager is deprecated. Use memory.memory_tier_manager.MemoryTierManagerV2 instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
 import os
 import json
 import uuid

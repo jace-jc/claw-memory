@@ -88,11 +88,11 @@ def memory_store(
 
     # 【P2新增】自动分配层级
     try:
-        from memory.memory_tier_manager import assign_tier_for_memory, TIER_WARM
+        from memory.memory_tier_manager import assign_tier_for_memory
         assigned_tier = assign_tier_for_memory(memory)
         memory["tier"] = assigned_tier
     except Exception:
-        memory["tier"] = TIER_WARM  # 默认 WARM
+        memory["tier"] = "WARM"  # 默认 WARM
 
     # 存储到 LanceDB
     db = get_db()

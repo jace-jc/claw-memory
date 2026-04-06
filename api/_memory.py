@@ -45,12 +45,12 @@ def memory_recall(query: str, auto_inject: bool = True, similarity_threshold: fl
                         scope=scope, use_rerank=use_rerank)
 
     if not results:
-        return {
+        return api_response(success=True, data={
             "query": query,
             "count": 0,
             "recall_text": "",
             "results": []
-        }
+        })
 
     # 构造召回文本
     lines = ["📚 相关记忆："]
@@ -71,13 +71,13 @@ def memory_recall(query: str, auto_inject: bool = True, similarity_threshold: fl
             "created_at": r.get("created_at"),
         })
 
-    return {
+    return api_response(success=True, data={
         "query": query,
         "count": len(results),
         "recall_text": recall_text,
         "auto_inject": auto_inject,
         "results": clean_results
-    }
+    })
 
 
 def memory_forget(memory_id: str = None, query: str = None) -> dict:
@@ -91,16 +91,16 @@ def memory_forget(memory_id: str = None, query: str = None) -> dict:
     if memory_id:
         existing = db.get(memory_id)
         if not existing:
-            return {
-                "success": False,
-                "message": f"记忆 {memory_id} 不存在"
-            }
+            return api_response(
+                success=False,
+                error=f"记忆 {memory_id} 不存在"
+            )
     
     success = db.delete(memory_id=memory_id, query=query)
-    return {
-        "success": success,
-        "message": f"记忆删除{'成功' if success else '失败'}"
-    }
+    return api_response(
+        success=success,
+        message=f"记忆删除{'成功' if success else '失败'}"
+    )
 
 
 def memory_kg_extract_and_link(memory_content: str, memory_id: str = None) -> dict:

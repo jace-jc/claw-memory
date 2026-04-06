@@ -236,7 +236,7 @@ def _get_importance_scores(self, limit: int) -> list:
                 sample_list = sample.to_pylist()
             else:
                 sample_list = []
-        except:
+        except Exception:
             sample_list = []
         
         # 按重要性排序
@@ -596,7 +596,7 @@ def search_rrf(self, query: str, limit: int = 5, k: int = 60, use_adaptive: bool
             try:
                 from incremental_learning import get_adaptive_weights
                 weights = get_adaptive_weights()
-            except:
+            except (ImportError, AttributeError):
                 pass
         
         # 【P0优化】并行执行5个通道搜索，显著降低延迟

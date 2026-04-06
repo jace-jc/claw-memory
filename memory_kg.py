@@ -30,7 +30,7 @@ class KnowledgeGraph:
             try:
                 with open(self.kg_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
-            except:
+            except (json.JSONDecodeError, IOError, OSError):
                 pass
         return {"nodes": {}, "edges": []}
     

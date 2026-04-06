@@ -71,7 +71,7 @@ def search(self, query: str, limit: int = 5, types: list = None, min_score: floa
             tags_str = r.get("tags", "[]")
             try:
                 r["tags_parsed"] = json.loads(tags_str) if tags_str else []
-            except:
+            except (json.JSONDecodeError, ValueError):
                 r["tags_parsed"] = []
             
             filtered.append(r)

@@ -18,6 +18,7 @@ DEFAULT_CONFIG = {
     "warm_ttl_days": 30,
     "min_importance": 0.3,
     "encryption_enabled": False,  # 安全修复
+    "workspace_dir": str(Path.home() / ".openclaw/workspace/memory"),
 }
 
 # 兼容层：CONFIG = DEFAULT_CONFIG（多处模块依赖此别名）

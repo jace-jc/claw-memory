@@ -15,6 +15,8 @@ from datetime import datetime, timedelta
 from typing import Optional, Set
 from pathlib import Path
 
+from core.memory_config import CONFIG
+
 _logger = logging.getLogger(__name__)
 
 # Global singleton
@@ -44,7 +46,7 @@ class RecallGuard:
             storage_path: Path to JSON file for persistence
             ttl_seconds: Time-to-live for recall markers (default: 24 hours)
         """
-        self.storage_path = Path(storage_path or "/Users/claw/.openclaw/workspace/memory/recall_guard.json")
+        self.storage_path = Path(storage_path or (Path(CONFIG.get("workspace_dir")) / "recall_guard.json"))
         self.ttl_seconds = ttl_seconds
         
         # Ensure directory exists

@@ -2,7 +2,7 @@
 
 All notable changes to Claw Memory will be documented in this file.
 
-## [3.2.0] - 2026-04-01
+## [2.8.0] - 2026-04-01
 
 ### Added (最终优化 - P0全集成)
 

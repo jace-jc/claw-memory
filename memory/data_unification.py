@@ -21,6 +21,8 @@ from typing import List, Dict, Set, Optional
 from pathlib import Path
 import re
 
+from core.memory_config import CONFIG
+
 _logger = logging.getLogger(__name__)
 
 
@@ -35,11 +37,12 @@ class MemoryUnifier:
     """
     
     def __init__(self, 
-                 memory_path: str = "/Users/claw/.openclaw/workspace/memory",
-                 output_path: str = "/Users/claw/.openclaw/workspace/memory/unification_report.json"):
-        self.memory_path = Path(memory_path)
-        self.output_path = Path(output_path)
-        self.deduplicated_path = Path("/Users/claw/.openclaw/workspace/memory/deduplicated_memories.json")
+                 memory_path: str = None,
+                 output_path: str = None):
+        workspace_dir = CONFIG.get("workspace_dir", str(Path.home() / ".openclaw/workspace/memory"))
+        self.memory_path = Path(memory_path) if memory_path else Path(workspace_dir)
+        self.output_path = Path(output_path) if output_path else Path(workspace_dir) / "unification_report.json"
+        self.deduplicated_path = Path(workspace_dir) / "deduplicated_memories.json"
         
         # Ensure directory exists
         self.output_path.parent.mkdir(parents=True, exist_ok=True)

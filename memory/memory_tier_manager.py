@@ -95,7 +95,7 @@ class MemoryTierManagerV2:
     """
     
     def __init__(self):
-        self.memory_dir = Path(CONFIG.get("memory_dir", "/Users/claw/.openclaw/workspace/memory"))
+        self.memory_dir = Path(CONFIG.get("workspace_dir", str(Path.home() / ".openclaw/workspace/memory")))
         self.archive_dir = self.memory_dir / "archived"
         self.archive_dir.mkdir(parents=True, exist_ok=True)
         

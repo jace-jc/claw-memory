@@ -136,7 +136,7 @@ class LanceDBStore:
             return None
         try:
             table_names = self.db.list_tables()
-            if "memories" in table_names:
+            if "memories" in table_names.tables:
                 return self.db.open_table("memories")
             
             # 创建表 - 使用 PyArrow schema
@@ -145,7 +145,7 @@ class LanceDBStore:
             # 创建索引加速查询（vector和id字段）
             try:
                 table.create_vector_index("vector", engine="lance")
-            except:
+            except Exception:
                 pass
             
             return table
@@ -280,27 +280,23 @@ class LanceDBStore:
             return False
     
     def stats(self) -> dict:
-        """获取统计信息（优化：使用 head() 获取代表性样本）"""
+        """获取统计信息（使用真实聚合查询）"""
         if self.table is None:
             return {"total": 0, "by_type": {}}
         
         try:
             total = self.table.count_rows()
             
-            # 使用 head() 获取前100条作为样本统计类型分布
-            try:
-                sample = self.table.head(100)
-                if hasattr(sample, 'to_pylist'):
-                    sample_list = sample.to_pylist()
-                else:
-                    sample_list = []
-            except:
-                sample_list = []
-            
+            # 使用真实的 group_by 聚合查询统计各类型数量
             by_type = {}
-            for t in ["fact", "preference", "decision", "lesson", "entity", "task_state"]:
-                count = sum(1 for r in sample_list if r.get("type") == t)
-                by_type[t] = count
+            for mem_type in ["fact", "preference", "decision", "lesson", "entity", "task_state"]:
+                try:
+                    count = self.table.filter(
+                        f'type == "{mem_type}"'
+                    ).count_rows()
+                    by_type[mem_type] = count
+                except Exception:
+                    by_type[mem_type] = 0
             
             return {"total": total, "by_type": by_type}
         except Exception as e:
@@ -332,7 +328,7 @@ class LanceDBStore:
                     sample_list = sample.to_pylist()
                 else:
                     sample_list = []
-            except:
+            except Exception:
                 sample_list = []
             
             # 过滤出旧记忆
